@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "types": ["node"],
+    "outDir": "./node_modules/.tmp/e2e"
+  },
+  "include": ["tests/e2e", "src/renderer/src/env.d.ts", "src/shared"]
+}

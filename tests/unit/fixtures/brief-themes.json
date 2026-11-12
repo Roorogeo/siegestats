@@ -1,0 +1,562 @@
+[
+ {
+  "id": "graphite",
+  "name": "Graphite",
+  "category": "generic",
+  "mode": "dark",
+  "bg": "#111315",
+  "surface": "#1B1E22",
+  "accent": "#4C8DFF",
+  "accent2": "#8AB4FF"
+ },
+ {
+  "id": "daylight",
+  "name": "Daylight",
+  "category": "generic",
+  "mode": "light",
+  "bg": "#F5F6F8",
+  "surface": "#FFFFFF",
+  "accent": "#2563EB",
+  "accent2": "#0EA5A4"
+ },
+ {
+  "id": "midnight",
+  "name": "Midnight",
+  "category": "generic",
+  "mode": "dark",
+  "bg": "#0B1020",
+  "surface": "#141B33",
+  "accent": "#7C8CFF",
+  "accent2": "#5EEAD4"
+ },
+ {
+  "id": "slate",
+  "name": "Slate",
+  "category": "generic",
+  "mode": "dark",
+  "bg": "#151A1F",
+  "surface": "#1F272E",
+  "accent": "#2DD4BF",
+  "accent2": "#94A3B8"
+ },
+ {
+  "id": "pitch-black",
+  "name": "Pitch Black",
+  "category": "generic",
+  "mode": "dark",
+  "bg": "#000000",
+  "surface": "#0D0D0D",
+  "accent": "#E5E5E5",
+  "accent2": "#9CA3AF"
+ },
+ {
+  "id": "high-contrast",
+  "name": "High Contrast",
+  "category": "generic",
+  "mode": "dark",
+  "bg": "#000000",
+  "surface": "#000000",
+  "accent": "#FFE600",
+  "accent2": "#00E5FF"
+ },
+ {
+  "id": "ember",
+  "name": "Ember",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#140B08",
+  "surface": "#22130E",
+  "accent": "#FF6B35",
+  "accent2": "#FFB347"
+ },
+ {
+  "id": "glacier",
+  "name": "Glacier",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#08131A",
+  "surface": "#0F2230",
+  "accent": "#7FDBFF",
+  "accent2": "#B8F1FF"
+ },
+ {
+  "id": "thunderstorm",
+  "name": "Thunderstorm",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#0E1016",
+  "surface": "#191C26",
+  "accent": "#F5D547",
+  "accent2": "#8E9BBF"
+ },
+ {
+  "id": "aurora",
+  "name": "Aurora",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#07120F",
+  "surface": "#0E211C",
+  "accent": "#3DFFB0",
+  "accent2": "#8A7CFF"
+ },
+ {
+  "id": "solar-flare",
+  "name": "Solar Flare",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#170A02",
+  "surface": "#2A1505",
+  "accent": "#FFA51F",
+  "accent2": "#FF4D2E"
+ },
+ {
+  "id": "deep-ocean",
+  "name": "Deep Ocean",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#04101C",
+  "surface": "#0A1E33",
+  "accent": "#1FA2FF",
+  "accent2": "#12D8C4"
+ },
+ {
+  "id": "volcanic-ash",
+  "name": "Volcanic Ash",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#121212",
+  "surface": "#1E1C1B",
+  "accent": "#E0452B",
+  "accent2": "#8C8580"
+ },
+ {
+  "id": "desert-dune",
+  "name": "Desert Dune",
+  "category": "elements",
+  "mode": "light",
+  "bg": "#F4E9D8",
+  "surface": "#FBF4E8",
+  "accent": "#C4622D",
+  "accent2": "#8A6B3F"
+ },
+ {
+  "id": "monsoon",
+  "name": "Monsoon",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#0C1418",
+  "surface": "#152329",
+  "accent": "#4FB3BF",
+  "accent2": "#7C8F99"
+ },
+ {
+  "id": "eclipse",
+  "name": "Eclipse",
+  "category": "elements",
+  "mode": "dark",
+  "bg": "#050507",
+  "surface": "#101016",
+  "accent": "#FF9F1C",
+  "accent2": "#5B5F97"
+ },
+ {
+  "id": "neon-district",
+  "name": "Neon District",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#0A0314",
+  "surface": "#160A26",
+  "accent": "#FF2BD6",
+  "accent2": "#00F0FF"
+ },
+ {
+  "id": "synthwave-sunset",
+  "name": "Synthwave Sunset",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#130523",
+  "surface": "#24103D",
+  "accent": "#FF6EC7",
+  "accent2": "#FFC857"
+ },
+ {
+  "id": "arcade-cabinet",
+  "name": "Arcade Cabinet",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#0B0B12",
+  "surface": "#17172A",
+  "accent": "#39FF14",
+  "accent2": "#FF3864"
+ },
+ {
+  "id": "laser-grid",
+  "name": "Laser Grid",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#050510",
+  "surface": "#0F0F24",
+  "accent": "#00E5FF",
+  "accent2": "#B14EFF"
+ },
+ {
+  "id": "midnight-rooftop",
+  "name": "Midnight Rooftop",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#0B0E17",
+  "surface": "#151A29",
+  "accent": "#F2A541",
+  "accent2": "#5D7BD5"
+ },
+ {
+  "id": "vapor-pastel",
+  "name": "Vapor Pastel",
+  "category": "neon",
+  "mode": "light",
+  "bg": "#F3E8FF",
+  "surface": "#FBF5FF",
+  "accent": "#9B6BE0",
+  "accent2": "#3FB8C9"
+ },
+ {
+  "id": "blacklight",
+  "name": "Blacklight",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#0A0014",
+  "surface": "#17002B",
+  "accent": "#C6FF00",
+  "accent2": "#9D4EDD"
+ },
+ {
+  "id": "hologram",
+  "name": "Hologram",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#071018",
+  "surface": "#0F1E2B",
+  "accent": "#7DF9FF",
+  "accent2": "#F5A6FF"
+ },
+ {
+  "id": "night-market",
+  "name": "Night Market",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#120A0A",
+  "surface": "#221414",
+  "accent": "#FF5252",
+  "accent2": "#FFD166"
+ },
+ {
+  "id": "subway-line",
+  "name": "Subway Line",
+  "category": "neon",
+  "mode": "dark",
+  "bg": "#101112",
+  "surface": "#1C1E20",
+  "accent": "#FFCC00",
+  "accent2": "#2EC4B6"
+ },
+ {
+  "id": "rainforest",
+  "name": "Rainforest",
+  "category": "nature",
+  "mode": "dark",
+  "bg": "#07130B",
+  "surface": "#102116",
+  "accent": "#3CCF6E",
+  "accent2": "#B4E197"
+ },
+ {
+  "id": "cherry-blossom",
+  "name": "Cherry Blossom",
+  "category": "nature",
+  "mode": "light",
+  "bg": "#FFF1F4",
+  "surface": "#FFF9FA",
+  "accent": "#D94F7A",
+  "accent2": "#6FA37A"
+ },
+ {
+  "id": "autumn-maple",
+  "name": "Autumn Maple",
+  "category": "nature",
+  "mode": "dark",
+  "bg": "#160C06",
+  "surface": "#26160C",
+  "accent": "#E2711D",
+  "accent2": "#C9A227"
+ },
+ {
+  "id": "lavender-field",
+  "name": "Lavender Field",
+  "category": "nature",
+  "mode": "dark",
+  "bg": "#110E1C",
+  "surface": "#1D1830",
+  "accent": "#B79CED",
+  "accent2": "#7FD1B9"
+ },
+ {
+  "id": "coral-reef",
+  "name": "Coral Reef",
+  "category": "nature",
+  "mode": "dark",
+  "bg": "#06151A",
+  "surface": "#0D252D",
+  "accent": "#FF7F6B",
+  "accent2": "#2ED1C4"
+ },
+ {
+  "id": "moss-and-stone",
+  "name": "Moss and Stone",
+  "category": "nature",
+  "mode": "dark",
+  "bg": "#101410",
+  "surface": "#1B211B",
+  "accent": "#8DAA6B",
+  "accent2": "#A8A39A"
+ },
+ {
+  "id": "sunflower",
+  "name": "Sunflower",
+  "category": "nature",
+  "mode": "light",
+  "bg": "#FFF9E0",
+  "surface": "#FFFDF2",
+  "accent": "#B88400",
+  "accent2": "#5C7A29"
+ },
+ {
+  "id": "arctic-tundra",
+  "name": "Arctic Tundra",
+  "category": "nature",
+  "mode": "light",
+  "bg": "#EEF4F8",
+  "surface": "#F8FBFD",
+  "accent": "#2A7FA8",
+  "accent2": "#6C8A9B"
+ },
+ {
+  "id": "red-canyon",
+  "name": "Red Canyon",
+  "category": "nature",
+  "mode": "dark",
+  "bg": "#170B08",
+  "surface": "#2A1410",
+  "accent": "#D9532B",
+  "accent2": "#E8A87C"
+ },
+ {
+  "id": "night-garden",
+  "name": "Night Garden",
+  "category": "nature",
+  "mode": "dark",
+  "bg": "#0A0F14",
+  "surface": "#131C24",
+  "accent": "#9BE564",
+  "accent2": "#D783FF"
+ },
+ {
+  "id": "terminal-green",
+  "name": "Terminal Green",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#020A04",
+  "surface": "#07160B",
+  "accent": "#33FF66",
+  "accent2": "#1FA84A"
+ },
+ {
+  "id": "amber-crt",
+  "name": "Amber CRT",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#0D0800",
+  "surface": "#1C1203",
+  "accent": "#FFB000",
+  "accent2": "#CC7A00"
+ },
+ {
+  "id": "blueprint",
+  "name": "Blueprint",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#0A2540",
+  "surface": "#0F3257",
+  "accent": "#E6F1FF",
+  "accent2": "#5FB0FF"
+ },
+ {
+  "id": "paper-and-ink",
+  "name": "Paper and Ink",
+  "category": "tactical",
+  "mode": "light",
+  "bg": "#F7F3EA",
+  "surface": "#FFFDF7",
+  "accent": "#1F2937",
+  "accent2": "#B4532A"
+ },
+ {
+  "id": "retro-pixel",
+  "name": "Retro Pixel",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#15152B",
+  "surface": "#23234A",
+  "accent": "#F7D046",
+  "accent2": "#E64C6B"
+ },
+ {
+  "id": "carbon-fiber",
+  "name": "Carbon Fiber",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#0C0C0D",
+  "surface": "#18181A",
+  "accent": "#E10600",
+  "accent2": "#9A9A9E"
+ },
+ {
+  "id": "gunmetal",
+  "name": "Gunmetal",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#14181C",
+  "surface": "#20262C",
+  "accent": "#7FA6C9",
+  "accent2": "#C0C6CC"
+ },
+ {
+  "id": "circuit-board",
+  "name": "Circuit Board",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#06150F",
+  "surface": "#0C2419",
+  "accent": "#D4A017",
+  "accent2": "#29C27F"
+ },
+ {
+  "id": "night-vision",
+  "name": "Night Vision",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#050B06",
+  "surface": "#0D1A10",
+  "accent": "#A6FF4D",
+  "accent2": "#5E7A63"
+ },
+ {
+  "id": "thermal-camera",
+  "name": "Thermal Camera",
+  "category": "tactical",
+  "mode": "dark",
+  "bg": "#0B0220",
+  "surface": "#1B0638",
+  "accent": "#FF7A00",
+  "accent2": "#FFE600"
+ },
+ {
+  "id": "winter-frost",
+  "name": "Winter Frost",
+  "category": "seasonal",
+  "mode": "light",
+  "bg": "#EDF3F9",
+  "surface": "#FAFCFE",
+  "accent": "#2F74B5",
+  "accent2": "#7FA8C9"
+ },
+ {
+  "id": "spring-bloom",
+  "name": "Spring Bloom",
+  "category": "seasonal",
+  "mode": "light",
+  "bg": "#F3FBEF",
+  "surface": "#FDFFFB",
+  "accent": "#3A9A5B",
+  "accent2": "#E0739A"
+ },
+ {
+  "id": "summer-beach",
+  "name": "Summer Beach",
+  "category": "seasonal",
+  "mode": "light",
+  "bg": "#FFF6E5",
+  "surface": "#FFFCF5",
+  "accent": "#008C8C",
+  "accent2": "#F2683C"
+ },
+ {
+  "id": "harvest",
+  "name": "Harvest",
+  "category": "seasonal",
+  "mode": "dark",
+  "bg": "#17100A",
+  "surface": "#261B11",
+  "accent": "#D98E04",
+  "accent2": "#A63D40"
+ },
+ {
+  "id": "spooky-night",
+  "name": "Spooky Night",
+  "category": "seasonal",
+  "mode": "dark",
+  "bg": "#0D0712",
+  "surface": "#1A0F24",
+  "accent": "#FF7518",
+  "accent2": "#8A2BE2"
+ },
+ {
+  "id": "winter-holiday",
+  "name": "Winter Holiday",
+  "category": "seasonal",
+  "mode": "dark",
+  "bg": "#0C1410",
+  "surface": "#15221B",
+  "accent": "#D7263D",
+  "accent2": "#F4D35E"
+ },
+ {
+  "id": "fireworks",
+  "name": "Fireworks",
+  "category": "seasonal",
+  "mode": "dark",
+  "bg": "#070A1A",
+  "surface": "#101633",
+  "accent": "#FF4D6D",
+  "accent2": "#FFD60A"
+ },
+ {
+  "id": "valentine",
+  "name": "Valentine",
+  "category": "seasonal",
+  "mode": "dark",
+  "bg": "#1A0A10",
+  "surface": "#2B121B",
+  "accent": "#FF4F79",
+  "accent2": "#FFB3C6"
+ },
+ {
+  "id": "lucky-clover",
+  "name": "Lucky Clover",
+  "category": "seasonal",
+  "mode": "dark",
+  "bg": "#06140B",
+  "surface": "#0D2415",
+  "accent": "#2ECC71",
+  "accent2": "#F1C40F"
+ },
+ {
+  "id": "rose-gold",
+  "name": "Rose Gold",
+  "category": "seasonal",
+  "mode": "dark",
+  "bg": "#151011",
+  "surface": "#231A1C",
+  "accent": "#E8A598",
+  "accent2": "#F6D5CE"
+ }
+]

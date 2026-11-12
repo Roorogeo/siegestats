@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "provider": "mock",
+  "backendUrl": null,
+  "links": {
+    "bug_report": "https://github.com/Roorogeo/siegestats/issues/new",
+    "community": null
+  }
+}
