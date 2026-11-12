@@ -22,8 +22,8 @@
     "test": "vitest run",
     "test:e2e": "npm run build && npm run build:web && playwright test --trace off",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "themes:report": "node scripts/theme-report.mjs",
-    "screenshot": "node scripts/screenshot.mjs"
+    "screenshot": "node scripts/screenshot.mjs",
+    "test:e2e:linux": "npm run build && npm run build:web && xvfb-run --auto-servernum playwright test --trace off"
   },
   "dependencies": {
     "electron-store": "12.0.0"
