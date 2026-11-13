@@ -9,7 +9,7 @@ import { ariaKeyShortcuts, hotkeyParts } from '../app/shortcuts';
 import { bridge } from '../bridge';
 import { cn } from '../lib/cn';
 import { Kbd, Skeleton, TextInput } from '../ui';
-import { PLATFORM_LABEL, PLATFORM_SHORT, PLATFORMS } from './platforms';
+import { PLATFORM_LABEL, PLATFORMS } from './platforms';
 import { FLOATING_SHADOW } from './Popover';
 
 function PlatformSelect({ value, onChange }: { value: Platform; onChange(platform: Platform): void }) {
@@ -24,7 +24,7 @@ function PlatformSelect({ value, onChange }: { value: Platform; onChange(platfor
       >
         {PLATFORMS.map((platform) => (
           <option key={platform} value={platform} className="bg-surface text-text">
-            {PLATFORM_SHORT[platform]}
+            {PLATFORM_LABEL[platform]}
           </option>
         ))}
       </select>
