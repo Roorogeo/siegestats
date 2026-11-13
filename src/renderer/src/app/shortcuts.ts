@@ -71,3 +71,14 @@ export function hotkeyParts(hotkey: Hotkey | null): string[] {
 
 /** "Ctrl+K", "Alt+Left". An unbound hotkey gives an empty string. */
 export const formatHotkey = (hotkey: Hotkey | null): string => hotkeyParts(hotkey).join('+');
+
+/**
+ * The binding in aria-keyshortcuts syntax ("Control+K", "Alt+ArrowLeft"), so assistive technology can
+ * announce it. Undefined when unbound, so the attribute is left out.
+ */
+export function ariaKeyShortcuts(hotkey: Hotkey | null): string | undefined {
+  if (!hotkey) return undefined;
+  const letterOrDigit = /^(?:Key|Digit)(.)$/.exec(hotkey.code);
+  const key = letterOrDigit?.[1] ?? hotkey.code;
+  return [...(hotkey.ctrl ? ['Control'] : []), ...(hotkey.alt ? ['Alt'] : []), ...(hotkey.shift ? ['Shift'] : []), key].join('+');
+}

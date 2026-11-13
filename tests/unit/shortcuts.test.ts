@@ -19,9 +19,10 @@ interface ShortcutsModule {
   formatHotkey(hotkey: Hotkey | null): string;
   hotkeyParts(hotkey: Hotkey | null): string[];
   keyName(code: string): string;
+  ariaKeyShortcuts(hotkey: Hotkey | null): string | undefined;
 }
 const MODULE_PATH: string = '../../src/renderer/src/app/shortcuts';
-const { matchesHotkey, formatHotkey, hotkeyParts, keyName } = (await import(/* @vite-ignore */ MODULE_PATH)) as ShortcutsModule;
+const { matchesHotkey, formatHotkey, hotkeyParts, keyName, ariaKeyShortcuts } = (await import(/* @vite-ignore */ MODULE_PATH)) as ShortcutsModule;
 
 const chord = (code: string, mods: Partial<Omit<KeyChord, 'code'>> = {}): KeyChord => ({
   code,
@@ -113,5 +114,18 @@ describe('formatHotkey', () => {
     expect(keyName('Numpad4')).toBe('Num 4');
     expect(keyName('F5')).toBe('F5');
     expect(keyName('Space')).toBe('Space');
+  });
+});
+
+describe('ariaKeyShortcuts', () => {
+  test('bindings read in aria-keyshortcuts syntax', () => {
+    expect(ariaKeyShortcuts(DEFAULT_HOTKEYS.focusSearch)).toBe('Control+K');
+    expect(ariaKeyShortcuts(DEFAULT_HOTKEYS.navigateBack)).toBe('Alt+ArrowLeft');
+    expect(ariaKeyShortcuts({ code: 'Digit3', ctrl: true, alt: false, shift: true })).toBe('Control+Shift+3');
+    expect(ariaKeyShortcuts({ code: 'F5', ctrl: false, alt: false, shift: false })).toBe('F5');
+  });
+
+  test('unbound leaves the attribute out', () => {
+    expect(ariaKeyShortcuts(null)).toBeUndefined();
   });
 });

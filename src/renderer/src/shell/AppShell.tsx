@@ -1,18 +1,26 @@
-import { Outlet } from 'react-router';
-import { useAppInfo } from '../app/AppInfoProvider';
-import { Logo } from '../ui';
+import { useEffect, useRef } from 'react';
+import { Outlet, useLocation } from 'react-router';
+import { setOpenTab, tabForPath } from '../app/tab-dots';
+import { TabBar } from './TabBar';
+import { TitleBar } from './TitleBar';
+import { useGlobalShortcuts } from './useGlobalShortcuts';
 
-/** Placeholder shell: just enough chrome to host a page. The real title bar and tab bar replace this file. */
+/**
+ * The window: a 40px title bar, a 44px tab row, and the routed page filling the rest. Only the page
+ * scrolls; the shell itself never does.
+ */
 export function AppShell() {
-  const info = useAppInfo();
+  const searchRef = useRef<HTMLInputElement>(null);
+  useGlobalShortcuts(searchRef);
+
+  const openTab = tabForPath(useLocation().pathname);
+  useEffect(() => setOpenTab(openTab), [openTab]);
+
   return (
-    <div className="flex h-full flex-col bg-bg text-text">
-      <header className="app-drag flex h-10 shrink-0 items-center gap-2 border-b border-border bg-surface px-3">
-        <Logo />
-        <span className="text-[13px] font-semibold">{info.name}</span>
-        <span className="text-xs text-text-muted">v{info.version}</span>
-      </header>
-      <main className="min-h-0 flex-1 overflow-auto">
+    <div className="flex h-full flex-col overflow-hidden bg-bg text-text">
+      <TitleBar searchRef={searchRef} />
+      <TabBar />
+      <main className="min-h-0 flex-1 overflow-y-auto">
         <Outlet />
       </main>
     </div>
