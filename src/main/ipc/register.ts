@@ -7,6 +7,7 @@ import {
   BRIDGE_MANIFEST, IPC_EVENT, IPC_INVOKE, isBridgeCall, isBridgeNamespace, type BridgeNamespace,
 } from '@shared/ipc/manifest';
 import { appError, toAppError } from '@shared/util/errors';
+import { rendererDevUrl } from '../window/main-window';
 
 type AnyFn = (...args: unknown[]) => unknown;
 
@@ -21,8 +22,14 @@ const windowCalls: Record<string, (win: BrowserWindow) => unknown> = {
 /** Only our own page may use the bridge: the built index.html, or the dev server while developing. */
 function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   const url = event.senderFrame?.url ?? '';
-  const devUrl = process.env.ELECTRON_RENDERER_URL;
-  if (devUrl) return url.startsWith(devUrl);
+  const devUrl = rendererDevUrl();
+  if (devUrl) {
+    try {
+      return new URL(url).origin === new URL(devUrl).origin;
+    } catch {
+      return false;
+    }
+  }
   try {
     const page = fileURLToPath(new URL(url.split('#')[0] ?? ''));
     return page === join(import.meta.dirname, '../renderer/index.html');

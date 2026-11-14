@@ -6,12 +6,14 @@ import { LiveMatchPage } from '../features/live/LiveMatchPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { AppShell } from '../shell/AppShell';
+import { RootError } from './RootError';
 import { ROUTES } from './routes';
 
 /** Exported on its own so tests can mount the same routes in a memory router. */
 export const routes: RouteObject[] = [
   {
     element: <AppShell />,
+    errorElement: <RootError />,
     children: [
       { path: ROUTES.home, element: <HomePage /> },
       { path: ROUTES.leaderboards, element: <LeaderboardsPage /> },

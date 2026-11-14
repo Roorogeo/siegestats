@@ -14,8 +14,8 @@ export function TextInput({ leading, trailing, className, wrapperClassName, ref,
   return (
     <div
       className={cn(
-        'flex h-8 items-center gap-2 rounded-control border border-border bg-surface-2 px-2.5 text-text-muted transition-colors',
-        'focus-within:border-accent focus-within:text-text',
+        'flex h-8 items-center gap-2 rounded-control border border-control-border bg-surface-2 px-2.5 text-text-muted transition-colors',
+        'focus-within:border-accent-text focus-within:text-text',
         wrapperClassName,
       )}
     >

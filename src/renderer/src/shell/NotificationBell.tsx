@@ -103,7 +103,7 @@ export function NotificationBell() {
         <div>
           <Tabs<PanelTab> items={tabs} value={tab} onChange={setTab} label="Notifications and favourites" idPrefix="bell" className="px-2" />
         </div>
-        <div {...tabPanelProps('bell', tab)}>
+        <div {...tabPanelProps('bell', tab, true)} className="outline-offset-[-2px]">
           {tab === 'notifications' ? (
             <QueryPanel
               query={notifications}

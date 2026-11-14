@@ -62,7 +62,8 @@ test('the favourite star is a sibling of the card button, never inside it', asyn
   await open(page, appUrl);
   await expect(card(page, 'graphite')).toBeVisible();
   await expect(page.locator('[data-theme-id] button')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Add Graphite to favourites' })).toHaveAttribute('aria-pressed', 'false');
+  // The star's label says what a press does; it is not also a toggle (that would announce contradictory states).
+  await expect(page.getByRole('button', { name: 'Add Graphite to favourites' })).not.toHaveAttribute('aria-pressed');
 });
 
 test('clicking a card applies the theme at once, without a reload, and it is saved', async ({ page, appUrl }) => {
@@ -104,7 +105,7 @@ test('a starred theme appears on the Favorites tab and survives a reload', async
   await tab(page, 'Elements').click();
   await page.getByRole('button', { name: 'Add Ember to favourites' }).click();
   const remove = page.getByRole('button', { name: 'Remove Ember from favourites' });
-  await expect(remove).toHaveAttribute('aria-pressed', 'true');
+  await expect(remove).toBeVisible();
   // Starring does not apply the theme.
   expect(await activeTheme(page)).toBe('graphite');
 

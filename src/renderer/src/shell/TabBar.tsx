@@ -65,12 +65,12 @@ export function TabBar() {
           ))}
         </ul>
       </nav>
-      <div className="ml-auto flex shrink-0 items-center gap-1">
+      <nav aria-label="Account and app" className="ml-auto flex shrink-0 items-center gap-1">
         <AccountSwitcher />
         <span aria-hidden className="mx-1 h-5 w-px bg-border" />
         <SettingsLink />
         <NotificationBell />
-      </div>
+      </nav>
     </div>
   );
 }

@@ -80,7 +80,6 @@ export const ThemePreviewCard = memo(function ThemePreviewCard({
         <IconButton
           data-star-for={theme.id}
           label={favorite ? `Remove ${theme.name} from favourites` : `Add ${theme.name} to favourites`}
-          aria-pressed={favorite}
           onClick={() => onToggleFavorite(theme)}
         >
           <Star className={cn('size-4', favorite && 'fill-current text-accent-text')} aria-hidden />

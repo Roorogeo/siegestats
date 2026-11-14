@@ -123,7 +123,8 @@ siegestats/
      Volcanic Ash, Desert Dune, Vapor Pastel, Cherry Blossom, Sunflower, Arctic Tundra, Red Canyon, Carbon
      Fiber, Winter Frost, Spring Bloom, Summer Beach, Winter Holiday. Accent-2 fails on 15. Default: accents
      stay unchanged for fills, borders, indicators and charts; accent-coloured text uses one extra derived
-     token, `accent-text`; accent-2 never colours text. This adds a token beyond the brief's list.
+     token, `accent-text`; accent-2 never colours text. A second derived token, `control-border`, gives inputs and
+     an unchecked switch an edge of at least 3:1 (WCAG non-text contrast). Both add tokens beyond the brief's list.
    - c. **High Contrast** lists bg = surface, so panels are separated by the white borders only.
    - d. **"Match Windows light/dark".** Only one generic theme is light. Default: Windows light → Daylight,
      Windows dark → the last dark generic theme used; turning it on while a specialty theme is active

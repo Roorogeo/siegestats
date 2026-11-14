@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AppSettings, SettingsPatch } from '@shared/types/settings';
 import { bridge } from '../bridge';
 
@@ -22,15 +22,36 @@ function optimistic(settings: AppSettings, patch: SettingsPatch): AppSettings {
 
 export function SettingsProvider({ initial, children }: { initial: AppSettings; children: ReactNode }) {
   const [settings, setSettings] = useState(initial);
+  /**
+   * Saves still in flight. While any is pending the screen shows the optimistic state; replies and change events
+   * are applied only when the last save settles. Core applies saves in order, so the last reply holds every change.
+   */
+  const pending = useRef(0);
 
-  useEffect(() => bridge.settings.onChange(setSettings), []);
+  useEffect(
+    () =>
+      bridge.settings.onChange((saved) => {
+        if (pending.current === 0) setSettings(saved);
+      }),
+    [],
+  );
 
   const update = useCallback((patch: SettingsPatch) => {
+    pending.current += 1;
     setSettings((current) => optimistic(current, patch));
-    bridge.settings.update(patch).then(setSettings, () => {
-      // The save failed: fall back to what is really stored.
-      void bridge.settings.get().then(setSettings);
-    });
+    const settle = (): boolean => {
+      pending.current -= 1;
+      return pending.current === 0;
+    };
+    bridge.settings.update(patch).then(
+      (saved) => {
+        if (settle()) setSettings(saved);
+      },
+      () => {
+        // The save failed: fall back to what is really stored.
+        if (settle()) void bridge.settings.get().then(setSettings);
+      },
+    );
   }, []);
 
   const value = useMemo(() => ({ settings, update }), [settings, update]);

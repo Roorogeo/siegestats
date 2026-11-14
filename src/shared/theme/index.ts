@@ -4,7 +4,7 @@ import { buildTheme } from './derive';
 import { DEFAULT_DARK_THEME_ID, DEFAULT_LIGHT_THEME_ID, DEFAULT_THEME_ID, THEME_SEEDS } from './seeds';
 
 export { DEFAULT_DARK_THEME_ID, DEFAULT_LIGHT_THEME_ID, DEFAULT_THEME_ID, THEME_SEEDS } from './seeds';
-export { buildTheme, deriveTokens, TEXT_CONTRAST } from './derive';
+export { buildTheme, CONTROL_CONTRAST, deriveTokens, TEXT_CONTRAST } from './derive';
 export { CHART_FAMILIES, CHART_L_BAND, CHART_MIN_CONTRAST, deriveChartPalette } from './chart-palette';
 export * as color from './color';
 
@@ -44,6 +44,7 @@ export const TOKEN_VARS = {
   accent2: '--accent-2',
   onAccent: '--on-accent',
   accentText: '--accent-text',
+  controlBorder: '--control-border',
   positive: '--positive',
   negative: '--negative',
 } as const satisfies Record<Exclude<keyof ThemeTokens, 'chart'>, `--${string}`>;

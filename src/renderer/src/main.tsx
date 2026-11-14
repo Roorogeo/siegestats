@@ -22,4 +22,12 @@ async function start(): Promise<void> {
   );
 }
 
-void start();
+start().catch((error: unknown) => {
+  // Nothing else can render without the bridge: say so plainly instead of leaving a blank window.
+  const root = document.getElementById('root');
+  if (root) {
+    root.textContent = `Sightline could not start: ${error instanceof Error ? error.message : String(error)}`;
+    root.setAttribute('role', 'alert');
+    root.style.padding = '24px';
+  }
+});

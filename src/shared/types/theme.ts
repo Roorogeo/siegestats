@@ -29,6 +29,8 @@ export interface ThemeTokens {
   onAccent: HexColor;
   /** Not in the brief's list (see docs/design.md, question 3b): the accent shifted in lightness until it reads at 4.5:1 on bg and surface. */
   accentText: HexColor;
+  /** Not in the brief's list (question 3b): the edge of a control whose outline is its only boundary, at least 3:1 on every plane. */
+  controlBorder: HexColor;
   positive: HexColor;
   negative: HexColor;
   chart: readonly [HexColor, HexColor, HexColor, HexColor, HexColor, HexColor, HexColor, HexColor];

@@ -5,6 +5,8 @@ import { contrast, ensureContrast, mix } from './color';
 
 /** Minimum contrast for anything that is read as text. */
 export const TEXT_CONTRAST = 4.5;
+/** Minimum contrast for the parts of a control that show where it is (WCAG 1.4.11). */
+export const CONTROL_CONTRAST = 3;
 /** Body text aims higher than the minimum. */
 const BODY_TEXT_CONTRAST = 7;
 
@@ -36,6 +38,7 @@ function pickOnAccent(accent: string): HexColor {
  *   border      surface pulled toward text
  *   on-accent   black or white, whichever reads better on the accent (always above 4.5:1)
  *   accent-text the accent stepped in lightness until it reads at 4.5:1 as text; equals accent where it already does
+ *   control-border  the border stepped until it reaches 3:1 on all planes: the edge of inputs and an unchecked switch
  *   positive / negative  fixed status hues stepped to 4.5:1
  *   chart       see chart-palette.ts
  * `overrides` on the seed win over all of it.
@@ -52,7 +55,7 @@ export function deriveTokens(seed: ThemeSeed): ThemeTokens {
     seed.overrides.text ??
     ensureContrast(dark ? mix(WHITE, surface, 0.08) : mix(BLACK, surface, 0.1), planes, BODY_TEXT_CONTRAST, direction);
   const textMuted = ensureContrast(mix(text, surface, 0.36), planes, TEXT_CONTRAST, direction);
-  const border = mix(surface, text, dark ? 0.16 : 0.18);
+  const border = seed.overrides.border ?? mix(surface, text, dark ? 0.16 : 0.18);
   const status = STATUS[seed.mode];
 
   const derived: ThemeTokens = {
@@ -66,6 +69,7 @@ export function deriveTokens(seed: ThemeSeed): ThemeTokens {
     accent2,
     onAccent: pickOnAccent(accent),
     accentText: ensureContrast(accent, planes, TEXT_CONTRAST, direction),
+    controlBorder: ensureContrast(border, planes, CONTROL_CONTRAST, direction),
     positive: ensureContrast(status.positive, planes, TEXT_CONTRAST, direction),
     negative: ensureContrast(status.negative, planes, TEXT_CONTRAST, direction),
     chart: deriveChartPalette(accent, surface, seed.mode),

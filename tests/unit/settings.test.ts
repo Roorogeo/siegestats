@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { createAppServices } from '@core/app-services';
 import { createMemorySettingsStore } from '@core/memory/settings-store';
-import { defaultSettings, normalizeSettings } from '@core/settings/defaults';
+import { defaultSettings, MAX_PINNED_ACCOUNTS, normalizeSettings } from '@core/settings/defaults';
 import { applySettingsPatch, createSettingsService } from '@core/settings/service';
 import { defaultThemeSettings, selectTheme, setMatchSystem, themeMatchesQuery, toggleFavoriteTheme } from '@shared/theme';
 import type { ThemeId } from '@shared/types/primitives';
@@ -146,5 +146,78 @@ describe('app services', () => {
     await expect(services.live.getView()).rejects.toMatchObject({ code: 'unsupported' });
     await expect(services.stats.getProfile({ platform: 'pc', id: 'x' as never })).rejects.toMatchObject({ code: 'unsupported' });
     expect(await services.favorites.list()).toEqual([]);
+  });
+});
+
+describe('settings saves', () => {
+  test('concurrent updates are applied one after another, none is lost', async () => {
+    const service = createSettingsService(createMemorySettingsStore());
+    await Promise.all([
+      service.update({ theme: { activeThemeId: id('ember') } }),
+      service.update({ system: { minimizeToTray: true } }),
+      service.update({ theme: { favoriteThemeIds: [id('glacier')] } }),
+    ]);
+    const s = await service.get();
+    expect(s.theme.activeThemeId).toBe('ember');
+    expect(s.theme.favoriteThemeIds).toEqual(['glacier']);
+    expect(s.system.minimizeToTray).toBe(true);
+  });
+
+  test('a failed write changes nothing and does not block later saves', async () => {
+    let fail = true;
+    const memory = createMemorySettingsStore();
+    const service = createSettingsService({ load: memory.load, save: async (s) => { if (fail) throw new Error('disk full'); await memory.save(s); } });
+    const seen: string[] = [];
+    service.onChange((s) => seen.push(s.theme.activeThemeId));
+    await expect(service.update({ theme: { activeThemeId: id('ember') } })).rejects.toThrow('disk full');
+    expect((await service.get()).theme.activeThemeId).toBe('graphite');
+    expect(seen).toEqual([]);
+    fail = false;
+    await service.update({ theme: { activeThemeId: id('slate') } });
+    expect((await service.get()).theme.activeThemeId).toBe('slate');
+  });
+});
+
+describe('pinned accounts', () => {
+  const pin = (id: string, extra: Record<string, unknown> = {}) => ({
+    player: { platform: 'pc', id, name: `Player ${id}`, avatarUrl: null, ...extra },
+    pinnedAt: '2026-11-01T00:00:00Z',
+  });
+
+  test('entries are rebuilt field by field; incomplete ones are dropped', () => {
+    const s = normalizeSettings({
+      accounts: {
+        mock: {
+          pinned: [
+            pin('a', { secret: 'x'.repeat(10_000) }),
+            { player: { platform: 'pc', id: 'b' }, pinnedAt: '2026-11-01T00:00:00Z' }, // no name
+            pin('c', { platform: 'switch' }),
+            { player: pin('d').player, pinnedAt: 'yesterday' },
+            pin('a'), // duplicate
+            pin('e', { avatarUrl: 'javascript:alert(1)' }),
+          ],
+          active: { platform: 'pc', id: 'a' },
+        },
+      },
+    });
+    expect(s.accounts.mock.pinned.map((p) => p.player.id)).toEqual(['a', 'e']);
+    expect(s.accounts.mock.pinned[0]?.player).toEqual({ platform: 'pc', id: 'a', name: 'Player a', avatarUrl: null });
+    expect(s.accounts.mock.pinned[1]?.player.avatarUrl).toBeNull();
+    expect(s.accounts.mock.active).toEqual({ platform: 'pc', id: 'a' });
+  });
+
+  test('the list is capped and the active account must be one of the pins', () => {
+    const many = Array.from({ length: 30 }, (_, i) => pin(`p${i}`));
+    const s = normalizeSettings({ accounts: { mock: { pinned: many, active: { platform: 'pc', id: 'p29' } } } });
+    expect(s.accounts.mock.pinned).toHaveLength(MAX_PINNED_ACCOUNTS);
+    expect(s.accounts.mock.active).toBeNull();
+  });
+});
+
+describe('theme search', () => {
+  test('matches the category label shown on the tab', () => {
+    const blueprint = { name: 'Blueprint', category: 'tactical', mode: 'dark' };
+    expect(themeMatchesQuery(blueprint, 'tech')).toBe(true);
+    expect(themeMatchesQuery({ name: 'Harvest', category: 'seasonal', mode: 'dark' }, 'mood')).toBe(true);
   });
 });

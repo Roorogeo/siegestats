@@ -14,7 +14,9 @@ export function cspPlugin(): Plugin {
     },
     transformIndexHtml(html) {
       const scriptSrc = isBuild ? "'self'" : "'self' 'unsafe-inline'";
-      const connectSrc = isBuild ? "'self'" : "'self' ws: http://localhost:* http://127.0.0.1:*";
+      // The app is loaded from file://, where 'self' would mean every local file: production allows no fetch at all
+      // (the renderer reaches everything through the bridge) and no frames or workers.
+      const connectSrc = isBuild ? "'none'" : "'self' ws: http://localhost:* http://127.0.0.1:*";
       const policy = [
         "default-src 'self'",
         `script-src ${scriptSrc}`,
@@ -23,6 +25,8 @@ export function cspPlugin(): Plugin {
         "font-src 'self'",
         `connect-src ${connectSrc}`,
         "object-src 'none'",
+        "frame-src 'none'",
+        "worker-src 'none'",
         "base-uri 'none'",
         "form-action 'none'",
       ].join('; ');

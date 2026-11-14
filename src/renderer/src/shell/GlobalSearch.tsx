@@ -103,8 +103,6 @@ export function GlobalSearch({ inputRef }: { inputRef: RefObject<HTMLInputElemen
         if (event.key !== 'Escape') return;
         event.preventDefault();
         setOpen(false);
-        const focused = document.activeElement;
-        if (focused instanceof HTMLElement && containerRef.current?.contains(focused)) focused.blur();
       }}
       onBlur={(event) => {
         const next = event.relatedTarget;

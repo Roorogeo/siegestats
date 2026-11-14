@@ -1,5 +1,5 @@
-import type { Platform, PlayerId } from '@shared/types/primitives';
-import type { AccountSettings, AppSettings, Hotkey, HotkeyAction } from '@shared/types/settings';
+import type { IsoDateTime, Platform, PlayerId } from '@shared/types/primitives';
+import type { AccountSettings, AppSettings, Hotkey, HotkeyAction, PinnedAccount } from '@shared/types/settings';
 import { defaultThemeSettings, normalizeThemeSettings } from '@shared/theme';
 
 const key = (code: string, mods: Partial<Pick<Hotkey, 'ctrl' | 'alt' | 'shift'>> = {}): Hotkey => ({
@@ -41,15 +41,33 @@ function hotkey(v: unknown, fallback: Hotkey | null): Hotkey | null {
   return { code: v.code, ctrl: v.ctrl === true, alt: v.alt === true, shift: v.shift === true };
 }
 
+/** Most accounts one person plausibly pins; anything beyond is dropped. */
+export const MAX_PINNED_ACCOUNTS = 20;
+const shortString = (v: unknown, max = 128): v is string => typeof v === 'string' && v.length > 0 && v.length <= max;
+
+function playerRef(v: unknown): PinnedAccount['player'] | null {
+  if (!isRecord(v) || !shortString(v.id) || !shortString(v.name) || !PLATFORMS.includes(v.platform as Platform)) return null;
+  const avatarUrl = typeof v.avatarUrl === 'string' && /^https:\/\//.test(v.avatarUrl) && v.avatarUrl.length <= 2048 ? v.avatarUrl : null;
+  return { platform: v.platform as Platform, id: v.id as PlayerId, name: v.name, avatarUrl };
+}
+
+/** Pins are rebuilt field by field: only what the types allow survives, whatever is on disk or in a patch. */
 function accounts(v: unknown): AccountSettings {
   if (!isRecord(v) || !Array.isArray(v.pinned)) return emptyAccounts();
-  // Pinned accounts are validated properly when pinning arrives (phase 2); keep what has the right outline.
-  const pinned = v.pinned.filter(
-    (p): p is AccountSettings['pinned'][number] => isRecord(p) && isRecord(p.player) && typeof p.pinnedAt === 'string',
-  );
+  const pinned: PinnedAccount[] = [];
+  const seen = new Set<string>();
+  for (const entry of v.pinned) {
+    if (!isRecord(entry) || typeof entry.pinnedAt !== 'string' || Number.isNaN(Date.parse(entry.pinnedAt))) continue;
+    const player = playerRef(entry.player);
+    const key = player && `${player.platform}:${player.id}`;
+    if (!player || !key || seen.has(key)) continue;
+    seen.add(key);
+    pinned.push({ player, pinnedAt: entry.pinnedAt as IsoDateTime });
+    if (pinned.length === MAX_PINNED_ACCOUNTS) break;
+  }
   const a = v.active;
   const active =
-    isRecord(a) && typeof a.id === 'string' && PLATFORMS.includes(a.platform as Platform)
+    isRecord(a) && pinned.some((p) => p.player.platform === a.platform && p.player.id === a.id)
       ? { platform: a.platform as Platform, id: a.id as PlayerId }
       : null;
   return { pinned, active };

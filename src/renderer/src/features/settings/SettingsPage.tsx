@@ -51,7 +51,7 @@ export function SettingsPage() {
                       current ? 'bg-surface-2 font-medium text-text' : 'text-text-muted hover:bg-surface-2 hover:text-text',
                     )}
                   >
-                    {current && <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent" />}
+                    {current && <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent-text" />}
                     <item.icon className="size-4 shrink-0" aria-hidden />
                     {item.label}
                   </Link>

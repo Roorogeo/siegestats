@@ -7,7 +7,12 @@ let current: Bridge | null = null;
  * (loaded on demand, so the Electron build never runs it).
  */
 export async function initBridge(): Promise<Bridge> {
-  current ??= window.bridge ?? (await import('./browser-bridge')).createBrowserBridge();
+  if (current) return current;
+  if (window.bridge) current = window.bridge;
+  // The stand-in exists only in the browser build. In the desktop app a missing bridge means the preload failed,
+  // and running on localStorage instead would silently lose settings.
+  else if (__WEB_BUILD__) current = (await import('./browser-bridge')).createBrowserBridge();
+  else throw new Error('The desktop bridge did not load.');
   return current;
 }
 

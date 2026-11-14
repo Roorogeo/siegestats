@@ -15,9 +15,9 @@ export interface LaunchedApp {
 }
 
 /** Starts the built app on a throwaway profile, or on `userData` to test what survives a restart. */
-export async function launchApp(userData?: string): Promise<LaunchedApp> {
+export async function launchApp(userData?: string, extraArgs: string[] = []): Promise<LaunchedApp> {
   const dir = userData ?? (await mkdtemp(join(tmpdir(), 'sightline-e2e-')));
-  const args = process.platform === 'linux' ? ['--no-sandbox', '--disable-gpu', '.'] : ['.'];
+  const args = [...(process.platform === 'linux' ? ['--no-sandbox', '--disable-gpu'] : []), ...extraArgs, '.'];
   const app = await electron.launch({
     executablePath: electronPath,
     args,

@@ -40,7 +40,7 @@ test('the five tabs exist in the order of the brief and navigate', async ({ page
   expect(errors).toEqual([]);
 });
 
-test('Ctrl+K focuses the search from the page, also from another field; Escape closes and leaves it', async ({ page, appUrl }) => {
+test('Ctrl+K focuses the search from the page, also from another field; Escape closes the suggestions', async ({ page, appUrl }) => {
   const errors = await open(page, appUrl);
   await page.locator('main').click();
   await expect(search(page)).not.toBeFocused();
@@ -57,7 +57,8 @@ test('Ctrl+K focuses the search from the page, also from another field; Escape c
 
   await page.keyboard.press('Escape');
   await expect(suggestions).toBeHidden();
-  await expect(search(page)).not.toBeFocused();
+  // The combobox pattern: Escape closes the popup and leaves focus in the field.
+  await expect(search(page)).toBeFocused();
 
   // From another text field (the platform picker inside the search counts as one), Ctrl+K still wins.
   await page.getByRole('combobox', { name: 'Platform to search' }).focus();
@@ -245,5 +246,29 @@ test('the shell never scrolls and has no horizontal overflow at the minimum wind
   expect(overflow).toEqual({ x: 0, y: 0 });
   // In a browser there is no window to control.
   await expect(page.getByRole('button', { name: 'Minimize' })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('Alt+Left still goes back while focus is on a tab of a tab list', async ({ page, appUrl }) => {
+  const errors = await open(page, appUrl);
+  await tabLinks(page).filter({ hasText: 'Leaderboards' }).click();
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await expect.poll(() => hashOf(page)).toBe('#/settings/themes');
+
+  // Clicking a category tab focuses it; Alt+Left must navigate, not switch category.
+  const neon = page.getByRole('tab', { name: /^Neon/ });
+  await neon.click();
+  await expect(neon).toBeFocused();
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe('#/leaderboards');
+
+  // Bare arrows still move between tabs, focus included.
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect.poll(() => hashOf(page)).toBe('#/settings/themes');
+  const generic = page.getByRole('tab', { name: /^Generic/ });
+  await generic.click();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: /^Elements/ })).toBeFocused();
+  await expect(page.getByRole('tab', { name: /^Elements/ })).toHaveAttribute('aria-selected', 'true');
   expect(errors).toEqual([]);
 });

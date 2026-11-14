@@ -17,6 +17,7 @@
   --color-accent-2: var(--accent-2);
   --color-on-accent: var(--on-accent);
   --color-accent-text: var(--accent-text);
+  --color-control-border: var(--control-border);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-chart-1: var(--chart-1);
@@ -78,11 +79,12 @@
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
+    scrollbar-color: var(--control-border) transparent;
   }
 
+  /* accent-text, not accent: it is guaranteed readable on bg, surface and surface-2 in every theme. */
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-text);
     outline-offset: 2px;
   }
 

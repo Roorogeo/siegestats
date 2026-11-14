@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   CHART_L_BAND,
   CHART_MIN_CONTRAST,
+  CONTROL_CONTRAST,
   DEFAULT_THEME_ID,
   TEXT_CONTRAST,
   THEMES,
@@ -63,6 +64,10 @@ describe.each(THEMES.map((t) => [t.id, t] as const))('contrast: %s', (_id, t) =>
     expect(worst(t.tokens.negative, planes(t))).toBeGreaterThanOrEqual(TEXT_CONTRAST);
   });
 
+  test('control edges reach 3:1 on bg, surface and surface-2', () => {
+    expect(worst(t.tokens.controlBorder, planes(t))).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
+  });
+
   test('text on the accent reads at 4.5:1 or better', () => {
     expect(color.contrast(t.tokens.onAccent, t.tokens.accent)).toBeGreaterThanOrEqual(TEXT_CONTRAST);
   });
@@ -103,7 +108,7 @@ describe('css variables', () => {
     const vars = tokensToCssVars(getTheme('graphite').tokens);
     expect(Object.keys(vars).sort()).toEqual(
       [
-        '--accent', '--accent-2', '--accent-text', '--bg', '--border', '--negative', '--on-accent', '--positive',
+        '--accent', '--accent-2', '--accent-text', '--bg', '--border', '--control-border', '--negative', '--on-accent', '--positive',
         '--surface', '--surface-2', '--text', '--text-muted',
         '--chart-1', '--chart-2', '--chart-3', '--chart-4', '--chart-5', '--chart-6', '--chart-7', '--chart-8',
       ].sort(),

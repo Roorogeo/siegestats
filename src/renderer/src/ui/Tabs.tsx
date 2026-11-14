@@ -23,11 +23,15 @@ interface TabsProps<T extends string> {
   className?: string;
 }
 
-/** Props for the element that shows the selected tab's content. */
-export const tabPanelProps = (idPrefix: string, id: string) => ({
+/**
+ * Props for the element that shows the selected tab's content. Pass `focusable` when the panel may contain nothing
+ * focusable (an empty state), so keyboard users can still reach its content.
+ */
+export const tabPanelProps = (idPrefix: string, id: string, focusable = false) => ({
   role: 'tabpanel' as const,
   id: `${idPrefix}-panel-${id}`,
   'aria-labelledby': `${idPrefix}-tab-${id}`,
+  ...(focusable ? { tabIndex: 0 } : {}),
 });
 
 /** Underlined sub-tabs (Overview / Matches / ...). Arrow keys, Home and End move the selection and the focus. */
@@ -48,6 +52,8 @@ export function Tabs<T extends string>({ items, value, onChange, label, idPrefix
       aria-label={label}
       className={cn('flex items-center gap-1 border-b border-border', className)}
       onKeyDown={(event) => {
+        // Alt+Left / Alt+Right are back / forward, Ctrl+arrows belong to the page: only bare keys move between tabs.
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
         const target = { ArrowRight: current + 1, ArrowLeft: current - 1, Home: 0, End: items.length - 1 }[event.key];
         if (target === undefined) return;
         event.preventDefault();

@@ -41,14 +41,22 @@ export function createSettingsService(store: SettingsStore): SettingsService {
     return loading;
   };
 
+  // Updates run one after another, each on the result of the previous one, so none is lost; a failed write
+  // leaves the settings as they were (in memory and on disk) and rejects that update only.
+  let queue: Promise<unknown> = Promise.resolve();
+
   return {
     get: load,
-    async update(patch) {
-      const next = applySettingsPatch(await load(), patch);
-      settings = next;
-      await store.save(next);
-      listeners.forEach((listener) => listener(next));
-      return next;
+    update(patch) {
+      const run = queue.then(async () => {
+        const next = applySettingsPatch(await load(), patch);
+        await store.save(next);
+        settings = next;
+        listeners.forEach((listener) => listener(next));
+        return next;
+      });
+      queue = run.catch(() => undefined);
+      return run;
     },
     onChange(cb): Unsubscribe {
       listeners.add(cb);

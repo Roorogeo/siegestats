@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { cspPlugin } from './build/csp.ts';
 import pkg from './package.json' with { type: 'json' };
 
-const define = { __APP_VERSION__: JSON.stringify(pkg.version) };
+const define = { __APP_VERSION__: JSON.stringify(pkg.version), __WEB_BUILD__: JSON.stringify(true) };
 
 /** The renderer on its own, in a plain browser, with the in-page bridge. For development and tests. */
 export default defineConfig({

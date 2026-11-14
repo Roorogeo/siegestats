@@ -1,7 +1,7 @@
 import type { ThemeId } from '../types/primitives';
 import type { ThemeMode, ThemeSettings } from '../types/theme';
 import { DEFAULT_DARK_THEME_ID, DEFAULT_LIGHT_THEME_ID, DEFAULT_THEME_ID } from './seeds';
-import { getTheme, isThemeId, resolveActiveTheme } from './index';
+import { getTheme, isThemeId, resolveActiveTheme, THEME_CATEGORIES } from './index';
 
 /** The rules of the theme picker, as pure functions over ThemeSettings. */
 
@@ -69,9 +69,10 @@ export function toggleFavoriteTheme(settings: ThemeSettings, id: ThemeId): Theme
   return { ...settings, favoriteThemeIds };
 }
 
-/** Case-insensitive search over theme name and category label. */
+/** Case-insensitive search over theme name, category (id and the label on its tab) and light / dark. */
 export function themeMatchesQuery(theme: { name: string; category: string; mode: string }, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return `${theme.name} ${theme.category} ${theme.mode}`.toLowerCase().includes(q);
+  const label = THEME_CATEGORIES.find((c) => c.id === theme.category)?.label ?? '';
+  return `${theme.name} ${theme.category} ${label} ${theme.mode}`.toLowerCase().includes(q);
 }
