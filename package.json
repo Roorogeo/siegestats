@@ -23,7 +23,8 @@
     "test:e2e": "npm run build && npm run build:web && playwright test --trace off",
     "check": "npm run typecheck && npm run lint && npm run test",
     "screenshot": "node scripts/screenshot.mjs",
-    "test:e2e:linux": "npm run build && npm run build:web && xvfb-run --auto-servernum playwright test --trace off"
+    "test:e2e:linux": "npm run build && npm run build:web && xvfb-run --auto-servernum playwright test --trace off",
+    "icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
     "electron-store": "12.0.0"

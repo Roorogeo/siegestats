@@ -8,5 +8,5 @@ export { Kbd } from './Kbd';
 export { Logo } from './Logo';
 export { Loading, Skeleton } from './Skeleton';
 export { Switch } from './Switch';
-export { Tabs, type TabItem } from './Tabs';
+export { Tabs, tabPanelProps, type TabItem } from './Tabs';
 export { TextInput } from './TextInput';

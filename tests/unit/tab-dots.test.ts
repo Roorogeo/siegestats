@@ -1,24 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type * as TabDots from '@renderer/app/tab-dots';
 
-/**
- * The renderer module is loaded by a computed path for the same reason as in shortcuts.test.ts
- * (tsconfig.node.json, which type-checks unit tests, does not list renderer files), and freshly for every
- * test, because the store is module state that lasts for the session.
- */
-type TabId = 'home' | 'leaderboards' | 'legend' | 'profile' | 'live';
-interface TabDotsModule {
-  setTabDot(tab: TabId, on: boolean): void;
-  setOpenTab(tab: TabId | null): void;
-  getTabDots(): Readonly<Record<TabId, boolean>>;
-  subscribeTabDots(listener: () => void): () => void;
-  tabForPath(pathname: string): TabId | null;
-}
-const MODULE_PATH: string = '../../src/renderer/src/app/tab-dots';
+/** The store is module state that lasts for the session, so every test loads a fresh copy. */
+type TabDotsModule = typeof TabDots;
 let store: TabDotsModule;
 
 beforeEach(async () => {
   vi.resetModules();
-  store = (await import(/* @vite-ignore */ MODULE_PATH)) as TabDotsModule;
+  store = await import('@renderer/app/tab-dots');
 });
 
 describe('tab dots', () => {

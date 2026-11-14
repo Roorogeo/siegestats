@@ -18,7 +18,7 @@ export function TitleBar({ searchRef }: { searchRef: RefObject<HTMLInputElement 
     <header className="app-drag grid h-10 shrink-0 grid-cols-[minmax(max-content,1fr)_minmax(0,520px)_minmax(max-content,1fr)] items-center gap-3 bg-surface">
       <div className="flex min-w-0 items-center gap-3 pl-3">
         <div className="flex items-center gap-2">
-          <Logo />
+          <Logo title="" />
           <span className="text-[13px] font-semibold tracking-tight">{info.name}</span>
           <span className="tabular text-xs text-text-muted">v{info.version}</span>
         </div>

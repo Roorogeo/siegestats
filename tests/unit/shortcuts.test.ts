@@ -1,28 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { DEFAULT_HOTKEYS } from '@core/settings/defaults';
 import type { Hotkey } from '@shared/types/settings';
-
-/**
- * Unit tests are type-checked by tsconfig.node.json, which does not list renderer files, so a static
- * import of src/renderer fails with TS6307. Until that project includes this module, it is loaded by a
- * computed path (which the compiler does not follow) and its signatures are restated here.
- */
-interface KeyChord {
-  code: string;
-  ctrlKey: boolean;
-  altKey: boolean;
-  shiftKey: boolean;
-  metaKey: boolean;
-}
-interface ShortcutsModule {
-  matchesHotkey(event: KeyChord, hotkey: Hotkey | null): boolean;
-  formatHotkey(hotkey: Hotkey | null): string;
-  hotkeyParts(hotkey: Hotkey | null): string[];
-  keyName(code: string): string;
-  ariaKeyShortcuts(hotkey: Hotkey | null): string | undefined;
-}
-const MODULE_PATH: string = '../../src/renderer/src/app/shortcuts';
-const { matchesHotkey, formatHotkey, hotkeyParts, keyName, ariaKeyShortcuts } = (await import(/* @vite-ignore */ MODULE_PATH)) as ShortcutsModule;
+import { ariaKeyShortcuts, formatHotkey, hotkeyParts, keyName, matchesHotkey, type KeyChord } from '@renderer/app/shortcuts';
 
 const chord = (code: string, mods: Partial<Omit<KeyChord, 'code'>> = {}): KeyChord => ({
   code,

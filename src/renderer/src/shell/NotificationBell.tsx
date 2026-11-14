@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { Bell, Star } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { AppNotification } from '@shared/types/notifications';
 import type { Favorite } from '@shared/types/storage';
 import { toAppError } from '@shared/util/errors';
 import { bridge } from '../bridge';
-import { EmptyState, ErrorState, IconButton, Loading, Skeleton, Tabs, type TabItem } from '../ui';
+import { EmptyState, ErrorState, IconButton, Loading, Skeleton, Tabs, tabPanelProps, type TabItem } from '../ui';
 import { PLATFORM_LABEL } from './platforms';
 import { Popover } from './Popover';
 
@@ -74,7 +74,6 @@ export function NotificationBell() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<PanelTab>('notifications');
   const [open, setOpen] = useState(false);
-  const tabsRef = useRef<HTMLDivElement>(null);
 
   // Notifications are read up front for the unread dot; favourites only once the panel is opened.
   const notifications = useQuery({ queryKey: NOTIFICATIONS_KEY, queryFn: () => bridge.notifications.list() });
@@ -82,12 +81,6 @@ export function NotificationBell() {
 
   useEffect(() => bridge.notifications.onChange((all) => queryClient.setQueryData<AppNotification[]>(NOTIFICATIONS_KEY, all)), [queryClient]);
   useEffect(() => bridge.favorites.onChange((all) => queryClient.setQueryData<Favorite[]>(FAVORITES_KEY, all)), [queryClient]);
-
-  // ui/Tabs moves the selection with the arrow keys but not the focus; keep focus on the selected tab.
-  useEffect(() => {
-    const list = tabsRef.current;
-    if (list?.contains(document.activeElement)) list.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();
-  }, [tab]);
 
   const unread = notifications.data?.filter((notification) => notification.readAt === null).length ?? 0;
   const tabs: TabItem<PanelTab>[] = [
@@ -107,10 +100,10 @@ export function NotificationBell() {
       )}
     >
       <div className="flex flex-col">
-        <div ref={tabsRef}>
-          <Tabs<PanelTab> items={tabs} value={tab} onChange={setTab} label="Notifications and favourites" className="px-2" />
+        <div>
+          <Tabs<PanelTab> items={tabs} value={tab} onChange={setTab} label="Notifications and favourites" idPrefix="bell" className="px-2" />
         </div>
-        <div role="tabpanel" aria-label={tab === 'notifications' ? 'Notifications' : 'Favourites'}>
+        <div {...tabPanelProps('bell', tab)}>
           {tab === 'notifications' ? (
             <QueryPanel
               query={notifications}

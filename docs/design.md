@@ -89,6 +89,9 @@ siegestats/
 - **SQLite through Node's built-in `node:sqlite`.** There is no native module to rebuild for ow-electron. It
   is still marked "release candidate" and was run on Electron 44 under Linux only; better-sqlite3 is the
   fallback behind the same interface.
+- **App icon.** `resources/` holds the icon set (`npm run icons` regenerates it from `icon.svg`). The main
+  process loads `resources/icon.png` / `icon.ico` at run time, so the phase 6 installer must ship `resources/`
+  (electron-builder `extraResources` or `asarUnpack`).
 - **Windows installer built by GitHub Actions.** On Linux the build got as far as the unpacked app, then the
   installer step failed for lack of Wine.
 

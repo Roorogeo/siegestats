@@ -1,5 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { join } from 'node:path';
+import iconIco from '../../../resources/icon.ico?asset';
+import iconPng from '../../../resources/icon.png?asset';
 import { IPC_EVENT } from '@shared/ipc/manifest';
 
 export const MIN_WIDTH = 1100;
@@ -22,6 +24,7 @@ export function createMainWindow(options: MainWindowOptions): BrowserWindow {
     frame: false,
     show: false,
     backgroundColor: options.backgroundColor,
+    icon: process.platform === 'win32' ? iconIco : iconPng,
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
       sandbox: true,

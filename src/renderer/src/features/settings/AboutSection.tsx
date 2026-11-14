@@ -39,14 +39,14 @@ export function AboutSection() {
     ['Version', info.version],
     ['Runtime', RUNTIME_LABEL[info.runtime]],
     ['Build', info.isDev ? 'Development' : 'Release'],
-    ['Data source', info.config.provider === 'mock' ? 'Demo data (generated on this computer)' : 'Live'],
+    ['Data source', info.config.provider === 'mock' ? 'Demo data (offline)' : 'Live'],
   ];
 
   return (
     <div className="max-w-2xl space-y-4">
       <Card className="flex items-center gap-4">
         <div className="flex size-12 shrink-0 items-center justify-center rounded-card border border-border bg-surface-2">
-          <Logo className="size-7" />
+          <Logo className="size-7" title="" />
         </div>
         <div className="min-w-0">
           <div className="text-[15px] font-semibold text-text">{info.name}</div>

@@ -1,4 +1,4 @@
-import { app, nativeTheme, type BrowserWindow } from 'electron';
+import { app, Menu, nativeTheme, type BrowserWindow } from 'electron';
 import appConfig from '@config/app.json';
 import { createAppServices } from '@core/app-services';
 import { normalizeSettings } from '@core/settings/defaults';
@@ -42,6 +42,9 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     app.setAppUserModelId(APP_ID);
+    // The frameless window has no menu bar, but Electron's default menu would still bind Ctrl+R (a full reload that
+    // bypasses the in-app Refresh) and the developer-tools shortcuts. Keep them only while developing.
+    if (app.isPackaged) Menu.setApplicationMenu(null);
 
     const settingsStore = createElectronSettingsStore();
     const core = createAppServices({

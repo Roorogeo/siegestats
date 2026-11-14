@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { cn } from '../lib/cn';
 
 export interface TabItem<T extends string> {
@@ -15,24 +15,43 @@ interface TabsProps<T extends string> {
   onChange(id: T): void;
   /** Accessible name of the tab list. */
   label: string;
+  /**
+   * Gives every tab the id `${idPrefix}-tab-${id}` and points it at `${idPrefix}-panel-${id}`, so the panel can use
+   * tabPanelProps() to get role, id and aria-labelledby.
+   */
+  idPrefix?: string;
   className?: string;
 }
 
-/** Underlined sub-tabs (Overview / Matches / ...). Arrow keys move between tabs. */
-export function Tabs<T extends string>({ items, value, onChange, label, className }: TabsProps<T>) {
-  const move = (delta: number): void => {
-    const index = items.findIndex((item) => item.id === value);
-    const next = items[(index + delta + items.length) % items.length];
-    if (next) onChange(next.id);
+/** Props for the element that shows the selected tab's content. */
+export const tabPanelProps = (idPrefix: string, id: string) => ({
+  role: 'tabpanel' as const,
+  id: `${idPrefix}-panel-${id}`,
+  'aria-labelledby': `${idPrefix}-tab-${id}`,
+});
+
+/** Underlined sub-tabs (Overview / Matches / ...). Arrow keys, Home and End move the selection and the focus. */
+export function Tabs<T extends string>({ items, value, onChange, label, idPrefix, className }: TabsProps<T>) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const go = (index: number): void => {
+    const next = items[(index + items.length) % items.length];
+    if (!next) return;
+    onChange(next.id);
+    // The tab button already exists, so focus can move now instead of after the re-render.
+    listRef.current?.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(next.id)}"]`)?.focus();
   };
+  const current = items.findIndex((item) => item.id === value);
   return (
     <div
+      ref={listRef}
       role="tablist"
       aria-label={label}
       className={cn('flex items-center gap-1 border-b border-border', className)}
       onKeyDown={(event) => {
-        if (event.key === 'ArrowRight') move(1);
-        if (event.key === 'ArrowLeft') move(-1);
+        const target = { ArrowRight: current + 1, ArrowLeft: current - 1, Home: 0, End: items.length - 1 }[event.key];
+        if (target === undefined) return;
+        event.preventDefault();
+        go(target);
       }}
     >
       {items.map((item) => {
@@ -42,6 +61,8 @@ export function Tabs<T extends string>({ items, value, onChange, label, classNam
             key={item.id}
             type="button"
             role="tab"
+            data-tab-id={item.id}
+            {...(idPrefix ? { id: `${idPrefix}-tab-${item.id}`, 'aria-controls': `${idPrefix}-panel-${item.id}` } : {})}
             aria-selected={selected}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(item.id)}

@@ -8,6 +8,6 @@
   },
   "include": [
     "src/main", "src/preload", "src/shared", "src/core", "config/**/*.json", "build",
-    "tests/unit", "tests/unit/**/*.json", "package.json", "electron.vite.config.ts", "vite.web.config.ts", "vitest.config.ts", "playwright.config.ts"
+    "tests/unit", "tests/unit/**/*.json", "src/renderer/src/app/shortcuts.ts", "src/renderer/src/app/tab-dots.ts", "src/renderer/src/app/routes.ts", "package.json", "electron.vite.config.ts", "vite.web.config.ts", "vitest.config.ts", "playwright.config.ts"
   ]
 }

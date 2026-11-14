@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { THEME_CATEGORIES, themesInCategory } from '@shared/theme';
 import type { Theme, ThemeMode } from '@shared/types/theme';
 import { useTheme } from '../../theme/ThemeProvider';
-import { Button, EmptyState, IconButton, Switch, Tabs, TextInput, type TabItem } from '../../ui';
+import { Button, EmptyState, IconButton, Switch, Tabs, TextInput, tabPanelProps, type TabItem } from '../../ui';
 import {
   categoryLabel,
   describeMatchWindows,
@@ -33,9 +33,7 @@ export function ThemePicker() {
   const [notice, setNotice] = useState<{ text: string; systemMode: ThemeMode } | null>(null);
 
   const searchRef = useRef<HTMLInputElement>(null);
-  const tabsRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const focusSelectedTab = useRef(false);
   const focusStarAt = useRef<number | null>(null);
 
   const searching = query.trim() !== '';
@@ -71,17 +69,7 @@ export function ThemePicker() {
     [tab, searching, favoriteIds, favorites, toggleFavorite],
   );
 
-  const onTabChange = (next: PickerTab): void => {
-    // The Tabs primitive changes the value on arrow keys; move the focus along with it.
-    focusSelectedTab.current = tabsRef.current?.contains(document.activeElement) ?? false;
-    setTab(next);
-  };
-
-  useEffect(() => {
-    if (!focusSelectedTab.current) return;
-    focusSelectedTab.current = false;
-    tabsRef.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();
-  }, [tab]);
+  const onTabChange = (next: PickerTab): void => setTab(next);
 
   useEffect(() => {
     const index = focusStarAt.current;
@@ -153,8 +141,8 @@ export function ThemePicker() {
   } else {
     const themes = tab === 'favorites' ? favorites : themesInCategory(tab);
     navigation = (
-      <div ref={tabsRef}>
-        <Tabs items={tabs} value={tab} onChange={onTabChange} label="Theme categories" />
+      <div>
+        <Tabs items={tabs} value={tab} onChange={onTabChange} label="Theme categories" idPrefix="themes" />
       </div>
     );
     content =
@@ -232,7 +220,7 @@ export function ThemePicker() {
         tabIndex={-1}
         {...(searching
           ? { role: 'region', 'aria-label': 'Search results' }
-          : { role: 'tabpanel', 'aria-label': tabs.find((t) => t.id === tab)?.label ?? 'Themes' })}
+          : tabPanelProps('themes', tab))}
       >
         {content}
       </div>
