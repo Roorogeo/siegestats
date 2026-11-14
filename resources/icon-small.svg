@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <!--
+    Sightline app icon for 32 px and below (16, 24, 32 in icon.ico; tray.png, tray@2x.png).
+    The same mark as icon.svg, redrawn on a 16 grid for small sizes: it fills about 75% of the plate instead of 60%,
+    the dot and the gap are relatively larger, and the dot sits on whole pixels at 16 px (x 2-7, y 9-14) so it stays round.
+    Raster icons: node scripts/build-icons.mjs
+  -->
+  <defs>
+    <linearGradient id="sightline" gradientUnits="userSpaceOnUse" x1="4.5" y1="11.5" x2="11.5" y2="4.5">
+      <stop offset="0" stop-color="#4C8DFF"/>
+      <stop offset="1" stop-color="#8AB4FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="16" height="16" rx="3.5" fill="#111315"/>
+  <rect x=".25" y=".25" width="15.5" height="15.5" rx="3.25" fill="none" stroke="#2A2E35" stroke-width=".5"/>
+  <circle cx="4.5" cy="11.5" r="2.5" fill="url(#sightline)"/>
+  <path d="M7.26 8.74L13.62 7.39A6.5 6.5 0 0 0 8.61 2.38Z" fill="url(#sightline)" stroke="url(#sightline)" stroke-width=".8" stroke-linejoin="round"/>
+</svg>

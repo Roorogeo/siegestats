@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="240" height="240">
+  <!--
+    The Sightline mark on its own (no plate), in the default Graphite theme's colours: for documents, the website,
+    an installer banner. Inside the app the mark is src/renderer/src/ui/Logo.tsx, which draws the same geometry with
+    theme tokens. For a single-colour version replace both fills with one colour (or currentColor).
+  -->
+  <defs>
+    <linearGradient id="sightline" gradientUnits="userSpaceOnUse" x1="6" y1="18" x2="16.5" y2="7.5">
+      <stop offset="0" stop-color="#4C8DFF"/>
+      <stop offset="1" stop-color="#8AB4FF"/>
+    </linearGradient>
+  </defs>
+  <circle cx="6" cy="18" r="3.6" fill="url(#sightline)"/>
+  <path d="M9.89 14.11L21.24 11.7A11.6 11.6 0 0 0 12.3 2.76Z" fill="url(#sightline)" stroke="url(#sightline)" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>
