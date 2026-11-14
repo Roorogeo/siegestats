@@ -4,7 +4,7 @@
 //
 // Sources (hand-written, commit these):
 //   resources/icon.svg         the full icon, used for 48 px and up
-//   resources/icon-small.svg   the same mark redrawn on a 16 grid, used for 32 px and below
+//   resources/icon-small.svg   the same mark redrawn on a 16 grid, used for 32 px and below and for both tray sizes
 // Outputs (generated, commit these too):
 //   resources/icon.png         512 x 512
 //   resources/icon.ico         16, 24, 32, 48, 64, 128, 256 (PNG-compressed entries)
