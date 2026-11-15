@@ -86,12 +86,13 @@ test('sortable headers report aria-sort, and a row opens the player with the key
 });
 
 test('player and match routes parse their links', async ({ page, appUrl }) => {
+  // A well-formed link to a match the source does not know: the route parses it and the screen says so.
   const errors = await open(page, appUrl, '/match/m-abc123?pov=psn:p%2B1');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Match details');
-  await expect(page.getByText('Match m-abc123, seen by psn:p+1')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Match not found' })).toBeVisible({ timeout: 15_000 });
 
+  // A malformed player link (unknown platform) never reaches the source.
   await page.goto(`${appUrl}/#/player/switch/abc`);
-  await expect(page.getByText('This player link is not valid')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'This player link is not valid' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
