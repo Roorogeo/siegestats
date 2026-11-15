@@ -7,8 +7,9 @@ import type { MatchPeriod } from '@shared/types/match';
 import type { MatchId, OperatorId, PlaylistId, RankId } from '@shared/types/primitives';
 import type { PlayerKey } from '@shared/types/player';
 import type { OperatorStats, SeasonRecord } from '@shared/types/stats';
+import { playerKeyString } from '@shared/util/player';
 import { kd, roundWinRate, winRate } from '@shared/util/stats';
-import { useGame } from '../../app/GameConfigProvider';
+import { useCurrentSeason, useGame } from '../../app/GameConfigProvider';
 import { parsePlayerParams, playerPath } from '../../app/routes';
 import { PointsLineChart, pointsSeries } from '../../charts';
 import { Avatar, MapBadge, OperatorBadge, PlatformLabel, RankBadge } from '../../components';
@@ -221,7 +222,8 @@ function Controls() {
   const [playlists, setPlaylists] = useState<PlaylistId[] | 'all'>('all');
   const [period, setPeriod] = useState<PeriodId>('30');
   const [scope, setScope] = useState<ScopeId>('global');
-  const active = game.config.playlists.filter((p) => game.playlistActiveIn(p.id, game.currentSeason().id));
+  const season = useCurrentSeason();
+  const active = game.config.playlists.filter((p) => game.playlistActiveIn(p.id, season.id));
   return (
     <Section title="Filters">
       <Row label="Chip group">
@@ -288,7 +290,7 @@ function BoardTable({ entries, busy }: { entries: readonly LeaderboardEntry[] | 
             label="Win-rate leaderboard"
             columns={columns}
             rows={entries}
-            rowKey={(e) => `${e.player.platform}:${e.player.id}`}
+            rowKey={(e) => playerKeyString(e.player)}
             stickyHeader
             maxHeight="320px"
             busy={busy}
@@ -342,7 +344,7 @@ export function ComponentGallery() {
   const now = useNow();
   const [search] = useSearchParams();
   const themes = (search.get('themes')?.split(',').filter(Boolean) ?? DEFAULT_THEMES).map((id) => getTheme(id));
-  const season = game.currentSeason();
+  const season = useCurrentSeason();
   const ladder = game.playlistsWithPoints().find((p) => p.points === 'ladder') ?? null;
   const plain = game.playlistsWithPoints().find((p) => p.points === 'plain') ?? null;
 
@@ -383,7 +385,9 @@ export function ComponentGallery() {
     <div className="flex flex-col gap-5 px-6 py-5">
       <header className="flex flex-col gap-1">
         <div className="flex items-center gap-2.5">
-          <h1 className="text-lg font-semibold">Component gallery</h1>
+          <h1 tabIndex={-1} className="text-lg font-semibold outline-none">
+            Component gallery
+          </h1>
           <Badge>Development only</Badge>
         </div>
         <p className="text-[13px] text-text-muted">

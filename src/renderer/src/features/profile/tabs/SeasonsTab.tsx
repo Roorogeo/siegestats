@@ -1,29 +1,35 @@
 import { useMemo } from 'react';
 import type { GameIndex } from '@shared/game-config';
-import type { PlaylistId } from '@shared/types/primitives';
+import type { PlaylistDef } from '@shared/types/game-config';
+import type { SeasonId } from '@shared/types/primitives';
 import type { PlayerKey } from '@shared/types/player';
 import type { OperatorStats, PlaylistStats, RankPoint, SeasonRecord } from '@shared/types/stats';
 import { kd, winRate } from '@shared/util/stats';
-import { useGame } from '../../../app/GameConfigProvider';
+import { useCurrentSeason, useGame } from '../../../app/GameConfigProvider';
 import { OperatorBadge, RankBadge } from '../../../components';
 import { DASH, formatKd, formatNumber, formatRatio } from '../../../lib/format';
 import { useSeasons } from '../../../queries';
 import { Badge, DataTable, SectionCard, type Column } from '../../../ui';
-import { CardTitle } from '../overview/CardTitle';
-import { ExpandableTable } from './ExpandableTable';
+import { ladderPlaylist, ladderRankText, ladderStats, pointsUnit, type PlacementsText } from '../overview/ladder';
 
-/** The season's standing on the Ranked ladder (the config's 'ladder' playlist), or null when it has none. */
-const ladderStanding = (record: SeasonRecord, ladderId: PlaylistId | null) =>
-  ladderId === null ? null : (record.byPlaylist.find((p) => p.playlistId === ladderId)?.standing ?? null);
-
-const unitOf = (game: GameIndex, playlistId: PlaylistId): string => (game.playlist(playlistId)?.points === 'plain' ? 'points' : 'RP');
-
-function Rank({ rank, unit = 'RP' }: { rank: RankPoint | null; unit?: string }) {
+/** A rank cell. With ranked matches but no rank, it says placements (as the Overview does) instead of "Unranked". */
+function Rank({ rank, unit = 'RP', placements = null }: { rank: RankPoint | null; unit?: string; placements?: PlacementsText | null }) {
+  if (rank === null && placements !== null) {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <span aria-hidden className="flex">
+          <RankBadge rank={null} size="sm" />
+        </span>
+        <span className="text-text">{placements}</span>
+      </span>
+    );
+  }
   return <RankBadge rank={rank} size="sm" withName unit={unit} />;
 }
 
-function seasonColumns(game: GameIndex, ladderId: PlaylistId | null): Column<SeasonRecord>[] {
-  const currentId = game.currentSeason().id;
+function seasonColumns(game: GameIndex, ladder: PlaylistDef | null, currentId: SeasonId): Column<SeasonRecord>[] {
+  const standing = (r: SeasonRecord) => ladderStats(r, ladder)?.standing ?? null;
+  const placements = (r: SeasonRecord) => ladderRankText(ladderStats(r, ladder), r.seasonId === currentId);
   return [
     {
       id: 'season',
@@ -43,14 +49,14 @@ function seasonColumns(game: GameIndex, ladderId: PlaylistId | null): Column<Sea
     {
       id: 'rank',
       header: 'Final rank',
-      cell: (r) => <Rank rank={ladderStanding(r, ladderId)?.rank ?? null} />,
-      sortValue: (r) => ladderStanding(r, ladderId)?.rank?.points ?? null,
+      cell: (r) => <Rank rank={standing(r)?.rank ?? null} placements={placements(r)} />,
+      sortValue: (r) => standing(r)?.rank?.points ?? null,
     },
     {
       id: 'peak',
       header: 'Peak rank',
-      cell: (r) => <Rank rank={ladderStanding(r, ladderId)?.peak ?? null} />,
-      sortValue: (r) => ladderStanding(r, ladderId)?.peak?.points ?? null,
+      cell: (r) => <Rank rank={standing(r)?.peak ?? null} placements={placements(r)} />,
+      sortValue: (r) => standing(r)?.peak?.points ?? null,
     },
     { id: 'matches', header: 'Matches', numeric: true, cell: (r) => formatNumber(r.overall.matches), sortValue: (r) => r.overall.matches },
     {
@@ -70,7 +76,9 @@ function seasonColumns(game: GameIndex, ladderId: PlaylistId | null): Column<Sea
   ];
 }
 
-function playlistColumns(game: GameIndex): Column<PlaylistStats>[] {
+/** The playlists of one season; isCurrent says whether it is the season in force (for the placements wording). */
+function playlistColumns(game: GameIndex, ladder: PlaylistDef | null, isCurrent: boolean): Column<PlaylistStats>[] {
+  const placements = (p: PlaylistStats) => (p.playlistId === ladder?.id ? ladderRankText(p, isCurrent) : null);
   return [
     { id: 'playlist', header: 'Playlist', cell: (p) => <span className="text-text">{game.playlist(p.playlistId)?.name ?? 'Unknown playlist'}</span> },
     { id: 'matches', header: 'Matches', numeric: true, cell: (p) => formatNumber(p.matches) },
@@ -81,12 +89,22 @@ function playlistColumns(game: GameIndex): Column<PlaylistStats>[] {
     {
       id: 'rank',
       header: 'Final rank',
-      cell: (p) => (p.standing ? <Rank rank={p.standing.rank} unit={unitOf(game, p.playlistId)} /> : <span className="text-text-muted">{DASH}</span>),
+      cell: (p) =>
+        p.standing ? (
+          <Rank rank={p.standing.rank} unit={pointsUnit(game, p.playlistId)} placements={placements(p)} />
+        ) : (
+          <span className="text-text-muted">{DASH}</span>
+        ),
     },
     {
       id: 'peak',
       header: 'Peak',
-      cell: (p) => (p.standing ? <Rank rank={p.standing.peak} unit={unitOf(game, p.playlistId)} /> : <span className="text-text-muted">{DASH}</span>),
+      cell: (p) =>
+        p.standing ? (
+          <Rank rank={p.standing.peak} unit={pointsUnit(game, p.playlistId)} placements={placements(p)} />
+        ) : (
+          <span className="text-text-muted">{DASH}</span>
+        ),
     },
   ];
 }
@@ -107,7 +125,9 @@ function BestOperator({ label, operator }: { label: string; operator: OperatorSt
   );
 }
 
-function SeasonDetail({ record, columns, name }: { record: SeasonRecord; columns: readonly Column<PlaylistStats>[]; name: string }) {
+function SeasonDetail({ record, ladder, isCurrent, name }: { record: SeasonRecord; ladder: PlaylistDef | null; isCurrent: boolean; name: string }) {
+  const game = useGame();
+  const columns = useMemo(() => playlistColumns(game, ladder, isCurrent), [game, ladder, isCurrent]);
   const rows = [...record.byPlaylist].sort((a, b) => b.matches - a.matches);
   return (
     <div className="flex flex-col gap-2.5 px-4 py-3 whitespace-normal">
@@ -137,21 +157,21 @@ const DEFAULT_SORT = { columnId: 'season', direction: 'desc' } as const;
 export function SeasonsTab({ player }: { player: PlayerKey }) {
   const game = useGame();
   const seasons = useSeasons(player);
-  const ladderId = game.playlistsWithPoints().find((p) => p.points === 'ladder')?.id ?? null;
-  const columns = useMemo(() => seasonColumns(game, ladderId), [game, ladderId]);
-  const detailColumns = useMemo(() => playlistColumns(game), [game]);
+  const currentId = useCurrentSeason().id;
+  const ladder = ladderPlaylist(game);
+  const columns = useMemo(() => seasonColumns(game, ladder, currentId), [game, ladder, currentId]);
   const nameOf = (record: SeasonRecord): string => game.season(record.seasonId)?.name ?? record.seasonId;
 
   return (
     <SectionCard
-      title={<CardTitle>Seasons</CardTitle>}
+      title="Seasons"
       subtitle="Ranks are on the Ranked ladder; the current season shows the rank now. Open a season for its playlists."
       flush
       query={seasons}
       loadingLabel="Loading seasons"
       skeleton={
         <div className="border-t border-border">
-          <ExpandableTable label="Seasons" columns={columns} rows={undefined} rowKey={(r) => r.seasonId} expandLabel={() => ''} detail={() => null} />
+          <DataTable label="Seasons" columns={columns} rows={undefined} rowKey={(r) => r.seasonId} detail={() => null} />
         </div>
       }
       isEmpty={(data) => data.data.length === 0}
@@ -159,14 +179,14 @@ export function SeasonsTab({ player }: { player: PlayerKey }) {
     >
       {(data) => (
         <div className="border-t border-border">
-          <ExpandableTable
+          <DataTable
             label="Seasons"
             columns={columns}
             rows={data.data}
             rowKey={(r) => r.seasonId}
             defaultSort={DEFAULT_SORT}
-            expandLabel={(r) => `Playlists of ${nameOf(r)}`}
-            detail={(r) => <SeasonDetail record={r} columns={detailColumns} name={nameOf(r)} />}
+            detailLabel={(r) => `Playlists of ${nameOf(r)}`}
+            detail={(r) => <SeasonDetail record={r} ladder={ladder} isCurrent={r.seasonId === currentId} name={nameOf(r)} />}
           />
         </div>
       )}

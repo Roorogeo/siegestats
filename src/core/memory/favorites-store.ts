@@ -4,9 +4,9 @@ import type { PlayerKey } from '@shared/types/player';
 import type { Favorite, RecentSearch } from '@shared/types/storage';
 import { appError } from '@shared/util/errors';
 import { jsonCopy } from '@shared/util/json';
+import { playerKeyString } from '@shared/util/player';
 import type { Clock } from '../ports';
 import { sanitizePlayerRef } from '../settings/defaults';
-import { playerKeyString } from './snapshot-store';
 
 export type FavoritesStore = Bridge['favorites'];
 export type SearchHistoryStore = Bridge['searches'];

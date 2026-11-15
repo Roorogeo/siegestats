@@ -1,5 +1,5 @@
 import type { GameIndex } from '@shared/game-config';
-import type { PlaylistDef, PlaylistKind, SeasonDef } from '@shared/types/game-config';
+import type { MapDef, PlaylistDef, PlaylistKind, SeasonDef } from '@shared/types/game-config';
 import type { MatchDetail, MatchPlayer, MatchSummary, MatchTeam, RankChange } from '@shared/types/match';
 import type {
   IsoDateTime, MatchId, OperatorId, PlatformFamily, PlaylistId, SeasonId, Side, TeamId,
@@ -8,13 +8,15 @@ import type { OperatorStats, RankPoint, RankedStanding, SeasonRecord } from '@sh
 import { createRandom, type Random } from '@shared/util/random';
 import { headshotPct } from '@shared/util/stats';
 import { DAY_MS, MINUTE_MS, toIso, toMs } from '@shared/util/time';
+import { mergeOperatorTallies, splitOverMaps, splitOverOperators, type OperatorSlot } from './breakdown';
 import { familyOf, generateAccounts } from './players';
 import { expandRounds, operatorIdsOf, simulateMatch, type SimPlayer } from './simulate';
 import {
   addOperatorTally, addTally, emptyOperatorTally, emptyTally, toMatchStats, toOperatorStats, type OperatorTally, type Tally,
 } from './tally';
 import type {
-  GeneratedMatch, MatchSlot, MockAccount, MockWorld, OperatorRounds, OperatorTallies, Participation, SeasonAgg,
+  GeneratedMatch, MatchSlot, MockAccount, MockPerson, MockWorld, OperatorRounds, OperatorTallies, Participation, SeasonAgg,
+  SummaryLine,
 } from './world';
 
 export const MOCK_MATCH_COUNT = 3000;
@@ -41,7 +43,8 @@ export interface GenerateOptions {
 /**
  * The whole mock world as a pure function of (seed, now, config): the same three inputs give byte-identical
  * output. Accounts depend on the seed and config only; matches are placed relative to `now`, and each match
- * belongs to the season its date falls in, by the config's dates.
+ * belongs to the season its date falls in, by the config's dates. The current season is
+ * GameIndex.currentSeasonAt(now), the rule the renderer uses too.
  */
 export function generateWorld({ seed, now, game }: GenerateOptions): MockWorld {
   const root = createRandom(seed);
@@ -50,41 +53,65 @@ export function generateWorld({ seed, now, game }: GenerateOptions): MockWorld {
   const accounts = generateAccounts(root.fork('accounts'), game);
   const windowStartMs = nowMs - MOCK_WINDOW_DAYS * DAY_MS;
 
-  const seasons = game.config.seasons;
-  const first = seasons[0] as SeasonDef;
-  const last = seasons[seasons.length - 1] as SeasonDef;
-  // A clock outside the config's seasons still gets a world: before the first season counts as the first, after the
-  // last as the last (whose end is open).
-  const seasonFor = (ms: number): SeasonDef => game.seasonAt(toIso(ms)) ?? (ms < toMs(first.startsAt) ? first : last);
+  const first = game.config.seasons[0] as SeasonDef;
+  const current = game.currentSeasonAt(toIso(nowMs));
+  const nowInConfig = game.seasonAt(toIso(nowMs)) !== null;
+  // A match belongs to the season its date falls in. A date outside every season belongs to the current season
+  // (currentSeasonAt's fallback, so the newest matches always agree with currentSeasonId), except a date before the
+  // first season while the clock is inside the config: that is the first season, so seasons never run backwards.
+  const seasonFor = (ms: number): SeasonDef =>
+    game.seasonAt(toIso(ms)) ?? (nowInConfig && ms < toMs(first.startsAt) ? first : current);
 
   const { matches, standings } = simulateMatches(root.fork('matches'), game, accounts, { windowStartMs, nowMs, seasonFor });
   const participations = new Map<string, Participation[]>(accounts.map((a) => [a.key, []]));
   for (const match of matches) match.slots.forEach((s, slot) => participations.get(s.account.key)?.push({ match, slot }));
   const seasonAggs = aggregateSeasons(accounts, participations, standings);
-  addSummarySeasons(root.fork('history'), game, accounts, seasonAggs, windowStartMs);
+  const history = root.fork('history');
+  addSummarySeasons(history, game, accounts, seasonAggs, windowStartMs);
   assignLegendPositions(game, accounts, seasonAggs);
 
-  const seasonRecords = new Map<string, SeasonRecord[]>();
-  for (const account of accounts) {
-    const aggs = seasonAggs.get(account.key);
-    const records = game.seasonsDescending().flatMap((season) => {
-      const agg = aggs?.get(season.id);
-      return agg && agg.overall.matches > 0 ? [toSeasonRecord(game, account.family, agg)] : [];
-    });
-    seasonRecords.set(account.key, records);
-  }
+  // Summary-only seasons are broken down per map and operator on first use, one account at a time: ~13,000 playlist
+  // lines in all, which would double the generation time (a long task on the browser build's main thread). Each
+  // account draws from its own fork, so the result does not depend on the order accounts are asked for.
+  const accountByKey = new Map(accounts.map((a) => [a.key, a]));
+  const breakDown = summaryBreakdown(game);
+  const detailed = new Set<string>();
+  const seasonsOf = (key: string): Map<SeasonId, SeasonAgg> => {
+    const aggs = seasonAggs.get(key) ?? new Map<SeasonId, SeasonAgg>();
+    const account = accountByKey.get(key);
+    if (account && !detailed.has(key)) {
+      detailed.add(key);
+      breakDown(history.fork(key), account, aggs);
+    }
+    return aggs;
+  };
+  const records = new Map<string, SeasonRecord[]>();
+  const seasonRecords = (key: string): SeasonRecord[] => {
+    let list = records.get(key);
+    const account = accountByKey.get(key);
+    if (!list && account) {
+      const aggs = seasonsOf(key);
+      list = game.seasonsDescending().flatMap((season) => {
+        const agg = aggs.get(season.id);
+        return agg && agg.overall.matches > 0 ? [toSeasonRecord(game, account.family, agg)] : [];
+      });
+      records.set(key, list);
+    }
+    return list ?? [];
+  };
 
   return {
     seed,
     generatedAt: now,
-    currentSeasonId: seasonFor(nowMs).id,
+    currentSeasonId: current.id,
     windowStart: toIso(windowStartMs),
     accounts,
-    accountByKey: new Map(accounts.map((a) => [a.key, a])),
+    accountByKey,
     matches,
     matchById: new Map(matches.map((m) => [m.id, m])),
     participations,
     seasons: seasonAggs,
+    seasonsOf,
     seasonRecords,
   };
 }
@@ -221,6 +248,9 @@ function simulateMatches(
     return entry;
   };
 
+  const mapsFor = mapPools(game);
+  const unreleasedIn = unreleasedOperators(game);
+
   const standings: Standings = new Map();
   const applyPoints = (a: MockAccount, season: SeasonDef, playlist: PlaylistDef, won: boolean): RankChange | null => {
     if (playlist.points === null) return null;
@@ -287,7 +317,7 @@ function simulateMatches(
       ...rng.shuffle(blue).map((account, i) => ({ account, slot: i, team: 'blue' as const })),
       ...rng.shuffle(orange).map((account, i) => ({ account, slot: blue.length + i, team: 'orange' as const })),
     ];
-    const sim = simulateMatch(rng, game, playlist.kind, players, party);
+    const sim = simulateMatch(rng, game, playlist, players, party, unreleasedIn(season));
     const winner: TeamId = sim.score.blue > sim.score.orange ? 'blue' : 'orange';
     const slots: MatchSlot[] = players.map((p) => {
       const r = sim.players[p.slot];
@@ -309,7 +339,7 @@ function simulateMatches(
       durationSec: sim.durationSec,
       season,
       playlist,
-      map: rng.pick(game.config.maps),
+      map: rng.pick(mapsFor(season, playlist)),
       score: sim.score,
       winner,
       slots,
@@ -318,6 +348,41 @@ function simulateMatches(
     for (const p of players) busyUntil[p.account.index] = t + sim.durationSec * 1000 + rng.int(1, 8) * MINUTE_MS;
   }
   return { matches, standings };
+}
+
+/**
+ * The maps a match of that playlist can be on in that season: released by then, and played in that kind of
+ * playlist (playlistKinds null = every kind). Every released map when none fits. Kinds, not each season's exact
+ * pool: the config does not keep those.
+ */
+function mapPools(game: GameIndex): (season: SeasonDef, playlist: PlaylistDef) => readonly MapDef[] {
+  const cache = new Map<string, readonly MapDef[]>();
+  return (season, playlist) => {
+    const key = `${season.id}|${playlist.id}`;
+    let pool = cache.get(key);
+    if (!pool) {
+      const released = game.config.maps.filter((m) => game.releasedIn(m, season.id));
+      const fitting = released.filter((m) => m.playlistKinds === null || m.playlistKinds.includes(playlist.kind));
+      pool = fitting.length > 0 ? fitting : released.length > 0 ? released : game.config.maps;
+      cache.set(key, pool);
+    }
+    return pool;
+  };
+}
+
+/** Per season and side, by position in GameIndex.operatorsBySide: 1 = not released yet that season, never picked. */
+function unreleasedOperators(game: GameIndex): (season: SeasonDef) => Record<Side, Uint8Array> {
+  const cache = new Map<SeasonId, Record<Side, Uint8Array>>();
+  const flags = (side: Side, season: SeasonDef): Uint8Array =>
+    Uint8Array.from(game.operatorsBySide(side), (o) => (game.releasedIn(o, season.id) ? 0 : 1));
+  return (season) => {
+    let entry = cache.get(season.id);
+    if (!entry) {
+      entry = { attack: flags('attack', season), defense: flags('defense', season) };
+      cache.set(season.id, entry);
+    }
+    return entry;
+  };
 }
 
 /** A weighted draw (by activity) among the accounts not taken yet; the pick is marked taken. No allocation: it runs ~60,000 times. */
@@ -391,6 +456,7 @@ const newAgg = (seasonId: SeasonId, fromMatches: boolean): SeasonAgg => ({
   overall: emptyTally(),
   byPlaylist: new Map(),
   operators: { attack: new Map(), defense: new Map() },
+  summary: null,
 });
 
 export function mergeOperators(into: OperatorTallies, add: readonly OperatorRounds[]): void {
@@ -434,8 +500,8 @@ function aggregateSeasons(
 
 /**
  * Seasons that ended before the generated window: one consistent summary per season the account played
- * (overall = the sum of its playlists, peak >= final rank, best operators within the season's rounds).
- * Their matches are not listed: a period filter on such a season finds no matches.
+ * (overall = the sum of its playlists, peak >= final rank). Their matches are not listed: a period filter on such a
+ * season finds no matches. summaryBreakdown() adds their per-map and per-operator counts.
  */
 function addSummarySeasons(
   rng: Random,
@@ -496,32 +562,58 @@ function addSummarySeasons(
         addTally(agg.overall, tally);
       }
       if (agg.overall.matches === 0) continue;
-      // Best attacker and defender: the favourite of each side, over a believable share of that side's rounds.
-      for (const side of ['attack', 'defense'] as const) {
-        const pool = p.operatorWeights[side];
-        let favourite: OperatorId | null = null;
-        let best = -Infinity;
-        pool.ids.forEach((id, i) => {
-          const w = pool.weights[i] ?? 0;
-          if (w > best) [favourite, best] = [id, w];
-        });
-        if (!favourite) continue;
-        const rounds = Math.round(agg.overall.rounds * 0.5 * r.float(0.22, 0.42));
-        if (rounds === 0) continue;
-        const share = rounds / agg.overall.rounds;
-        const kills = Math.min(Math.round(agg.overall.kills * share * r.float(0.9, 1.1)), agg.overall.kills);
-        agg.operators[side].set(favourite, {
-          rounds,
-          roundsWon: Math.round(rounds * (agg.overall.roundsWon / agg.overall.rounds)),
-          kills,
-          deaths: Math.min(Math.round(agg.overall.deaths * share), agg.overall.deaths),
-          assists: Math.min(Math.round(agg.overall.assists * share), agg.overall.assists),
-          headshots: Math.round(kills * p.headshotRate),
-        });
-      }
       own.set(season.id, agg);
     }
   }
+}
+
+/**
+ * Fills in the summary-only seasons of one account (`rng`: that account's fork of the history stream): each playlist
+ * line broken down per map and per operator, both summing to the line, with only operators released by that season
+ * and only maps played in that kind of playlist. The season's operators are the sum of its lines, so its best
+ * attacker and defender are the top rows of its Operators list.
+ */
+function summaryBreakdown(game: GameIndex): (rng: Random, account: MockAccount, aggs: Map<SeasonId, SeasonAgg>) => void {
+  const mapsFor = mapPools(game);
+  const unreleasedIn = unreleasedOperators(game);
+  const slots: OperatorSlot[] = (['attack', 'defense'] as const).flatMap((side) =>
+    game.operatorsBySide(side).map((o): OperatorSlot => ({ side, operatorId: o.id })),
+  );
+  return (rng, account, aggs) => {
+    for (const agg of aggs.values()) {
+      const season = game.season(agg.seasonId);
+      if (agg.fromMatches || agg.summary || !season) continue;
+      const b = rng.fork(`${season.id}/breakdown`);
+      const weights = seasonOperatorWeights(b, account.person, unreleasedIn(season));
+      const summary = new Map<PlaylistId, SummaryLine>();
+      for (const [playlistId, line] of agg.byPlaylist) {
+        const playlist = game.playlist(playlistId);
+        if (!playlist) continue;
+        const maps = mapsFor(season, playlist);
+        const mapWeights = maps.map(() => b.float(0.4, 1.6));
+        const operators = splitOverOperators(b, line.tally, slots, weights);
+        summary.set(playlistId, { maps: splitOverMaps(b, line.tally, maps.map((m) => m.id), mapWeights), operators });
+        mergeOperatorTallies(agg.operators, operators);
+      }
+      agg.summary = summary;
+    }
+  };
+}
+
+/**
+ * One person's operator pick weights for one summary season, by position in the slots (attackers, then defenders,
+ * each in GameIndex.operatorsBySide order): their usual weights, varied a little per season, and 0 for an operator
+ * not released yet that season. Each side sums to 1, so rounds split about evenly between the sides.
+ */
+function seasonOperatorWeights(rng: Random, person: MockPerson, unreleased: Record<Side, Uint8Array>): number[] {
+  const out: number[] = [];
+  for (const side of ['attack', 'defense'] as const) {
+    const flags = unreleased[side];
+    const weights = person.operatorWeights[side].weights.map((w, i) => (flags[i] ? 0 : w * rng.float(0.6, 1.4)));
+    const sum = weights.reduce((s, w) => s + w, 0);
+    for (const w of weights) out.push(sum > 0 ? w / sum : 0);
+  }
+  return out;
 }
 
 /** Legend Division "Position": the place on the player's own region's points board, that season. */
@@ -547,11 +639,14 @@ function assignLegendPositions(game: GameIndex, accounts: MockAccount[], aggs: M
   }
 }
 
-/** The operator with the most rounds on that side (design question 15); ties go to the alphabetically first id. */
+/**
+ * The operator with the most rounds on that side (design question 15); ties go to the alphabetically first id, in
+ * the provider's getOperators order, so the best attacker is always the top attacker row there.
+ */
 function bestOn(side: Side, operators: OperatorTallies): OperatorStats | null {
   let best: [OperatorId, OperatorTally] | null = null;
   for (const [id, tally] of operators[side]) {
-    if (!best || tally.rounds > best[1].rounds || (tally.rounds === best[1].rounds && id < best[0])) best = [id, tally];
+    if (!best || tally.rounds > best[1].rounds || (tally.rounds === best[1].rounds && id.localeCompare(best[0]) < 0)) best = [id, tally];
   }
   return best ? toOperatorStats(best[0], best[1]) : null;
 }

@@ -117,6 +117,29 @@ test('Alt+Left / Alt+Right move through history and the back and forward buttons
   expect(errors).toEqual([]);
 });
 
+test('Back and Forward in the title bar keep focus when used from the keyboard', async ({ page, appUrl }) => {
+  const errors = await open(page, appUrl);
+  const back = page.getByRole('button', { name: 'Back', exact: true });
+  const forward = page.getByRole('button', { name: 'Forward', exact: true });
+  const heading = page.getByRole('heading', { level: 1 });
+  for (const name of ['Leaderboards', 'Legend Division', 'Live Match']) await tabLinks(page).filter({ hasText: name }).click();
+  await expect.poll(() => hashOf(page)).toBe('#/live');
+
+  // The buttons stay on screen, so the screen change leaves focus on them instead of moving it to the page.
+  await back.focus();
+  await page.keyboard.press('Enter');
+  await expect(heading).toHaveText('Legend Division');
+  await expect(back).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(heading).toHaveText('Leaderboards');
+  await expect(back).toBeFocused();
+  await forward.focus();
+  await page.keyboard.press('Space');
+  await expect(heading).toHaveText('Legend Division');
+  await expect(forward).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
 test('refresh re-fetches in place: no page reload, no navigation', async ({ page, appUrl }) => {
   const errors = await open(page, appUrl, '/leaderboards');
   await page.evaluate(() => Object.assign(window, { sameDocument: true }));
@@ -205,7 +228,8 @@ test('the account switcher shows the honest empty state', async ({ page, appUrl 
   const trigger = page.getByRole('button', { name: 'My accounts: No account' });
   await trigger.click();
   const panel = page.getByRole('dialog', { name: 'My accounts' });
-  await expect(panel).toContainText('Pin an account as yours from its profile. Pinning arrives in phase 2.');
+  await expect(panel).toContainText('Pin an account as yours from its profile.');
+  await expect(panel).not.toContainText('phase 2');
   await page.keyboard.press('Escape');
   await expect(panel).toBeHidden();
   await expect(trigger).toBeFocused();

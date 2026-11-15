@@ -1,20 +1,20 @@
 import { ArrowRight, Link2, Link2Off } from 'lucide-react';
 import { Link } from 'react-router';
 import type { PlayerKey, PlayerRef } from '@shared/types/player';
+import { playerKeyString } from '@shared/util/player';
 import { playerPath } from '../../../app/routes';
 import { Avatar, PlatformLabel } from '../../../components';
 import { useCapabilities, useProfile } from '../../../queries';
 import { EmptyState, SectionCard, Skeleton } from '../../../ui';
-import { CardTitle } from '../overview/CardTitle';
 
 const SOURCE_NOTE = 'Links come from the data source, never from matching names.';
 
+/** The link's name is its visible content (handle, platform, "Open profile"), so the platform is announced too. */
 function AccountCard({ account }: { account: PlayerRef }) {
   return (
     <li>
       <Link
         to={playerPath(account)}
-        aria-label={`${account.name}, open profile`}
         className="group flex items-center gap-3 rounded-card border border-border bg-surface-2 px-3 py-2.5 transition-colors hover:border-text-muted"
       >
         <Avatar player={account} size="lg" />
@@ -54,7 +54,7 @@ export function LinkedAccountsTab({ player }: { player: PlayerKey }) {
   const exposed = capabilities.data?.linkedAccounts !== false;
   return (
     <SectionCard
-      title={<CardTitle>Linked accounts</CardTitle>}
+      title="Linked accounts"
       subtitle={SOURCE_NOTE}
       query={profile}
       loadingLabel="Loading linked accounts"
@@ -86,7 +86,7 @@ export function LinkedAccountsTab({ player }: { player: PlayerKey }) {
           <div className="@container">
             <ul aria-label="Linked accounts" className="grid grid-cols-1 gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
               {linked.map((account) => (
-                <AccountCard key={`${account.platform}:${account.id}`} account={account} />
+                <AccountCard key={playerKeyString(account)} account={account} />
               ))}
             </ul>
           </div>

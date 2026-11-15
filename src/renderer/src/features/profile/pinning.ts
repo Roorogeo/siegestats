@@ -1,19 +1,9 @@
-import { useCallback } from 'react';
 import type { PlayerKey, PlayerRef } from '@shared/types/player';
 import type { IsoDateTime } from '@shared/types/primitives';
 import type { AccountSettings } from '@shared/types/settings';
-import { toIso } from '@shared/util/time';
-import { useAppInfo } from '../../app/AppInfoProvider';
-import { useSettings } from '../../app/SettingsProvider';
-import { samePlayer } from '../../queries';
+import { samePlayer, toPlayerRef } from '@shared/util/player';
 
-/** Only the fields a PlayerRef has, so nothing else a provider answer carries is saved into settings. */
-const refOf = (player: PlayerRef): PlayerRef => ({
-  platform: player.platform,
-  id: player.id,
-  name: player.name,
-  avatarUrl: player.avatarUrl,
-});
+/** The rules of pinning accounts as "mine", as plain data; usePinnedAccounts saves their result through settings. */
 
 /**
  * "Pin as mine": the account is added at the end of the pinned list (once). It becomes the active account (the one
@@ -21,7 +11,7 @@ const refOf = (player: PlayerRef): PlayerRef => ({
  */
 export function withPinned(accounts: AccountSettings, player: PlayerRef, at: IsoDateTime, makeActive = false): AccountSettings {
   const already = accounts.pinned.some((p) => samePlayer(p.player, player));
-  const pinned = already ? accounts.pinned : [...accounts.pinned, { player: refOf(player), pinnedAt: at }];
+  const pinned = already ? accounts.pinned : [...accounts.pinned, { player: toPlayerRef(player), pinnedAt: at }];
   const key: PlayerKey = { platform: player.platform, id: player.id };
   return { pinned, active: makeActive || accounts.active === null ? key : accounts.active };
 }
@@ -33,29 +23,4 @@ export function withoutPinned(accounts: AccountSettings, player: PlayerKey): Acc
   const first = pinned[0]?.player;
   const active = activeGone ? (first ? { platform: first.platform, id: first.id } : null) : accounts.active;
   return { pinned, active };
-}
-
-export interface PinnedAccounts {
-  /** The running data source's accounts (settings.accounts[config.provider]). */
-  accounts: AccountSettings;
-  isPinned(player: PlayerKey): boolean;
-  pin(player: PlayerRef, options?: { makeActive?: boolean }): void;
-  unpin(player: PlayerKey): void;
-}
-
-/** The accounts pinned as "mine" for the running data source, with pin and unpin saved through settings. */
-export function usePinnedAccounts(): PinnedAccounts {
-  const { settings, update } = useSettings();
-  const { provider } = useAppInfo().config;
-  const accounts = settings.accounts[provider];
-
-  const save = useCallback((next: AccountSettings) => update({ accounts: { [provider]: next } }), [provider, update]);
-  const isPinned = useCallback((player: PlayerKey) => accounts.pinned.some((p) => samePlayer(p.player, player)), [accounts]);
-  const pin = useCallback(
-    (player: PlayerRef, options: { makeActive?: boolean } = {}) =>
-      save(withPinned(accounts, player, toIso(Date.now()), options.makeActive ?? false)),
-    [accounts, save],
-  );
-  const unpin = useCallback((player: PlayerKey) => save(withoutPinned(accounts, player)), [accounts, save]);
-  return { accounts, isPinned, pin, unpin };
 }

@@ -2,10 +2,9 @@ import type { ReactNode } from 'react';
 import type { IsoDateTime } from '@shared/types/primitives';
 import type { PlayerSearchResult } from '@shared/types/player';
 import { useGame } from '../../app/GameConfigProvider';
-import { Avatar, PlatformLabel, RankBadge, rankLabel, rankState } from '../../components';
+import { Avatar, PLATFORM_LABEL, PlatformLabel, RankBadge, rankLabel, rankState } from '../../components';
 import { cn } from '../../lib/cn';
 import { formatNumber, timeAgo } from '../../lib/format';
-import { PLATFORM_LABEL } from '../../shell/platforms';
 import { Skeleton } from '../../ui';
 import { splitMatch } from './search-model';
 import type { SearchOption } from './usePlayerSearch';
@@ -26,7 +25,10 @@ export function HighlightedName({ name, typed }: { name: string; typed: string }
 interface OptionRowProps {
   option: SearchOption;
   active: boolean;
-  /** The option's accessible name: the visible cells are abbreviated ("Lv"), so the name is spelled out. */
+  /**
+   * The option's accessible name: the row's visible words in their order ("Lv 236", "S5"), so voice control can say
+   * what is on screen, with a word of expansion where the row abbreviates ("S5 Silver V").
+   */
   label: string;
   onChoose(option: SearchOption): void;
   children: ReactNode;
@@ -49,7 +51,7 @@ export function OptionRow({ option, active, label, onChoose, children }: OptionR
       onClick={() => onChoose(option)}
       className={cn(
         'flex min-h-9 cursor-pointer items-center gap-2.5 rounded-control px-2 py-1 text-[13px] text-text hover:bg-surface-2',
-        active && 'bg-surface-2 shadow-[inset_2px_0_0_var(--accent)]',
+        active && 'bg-surface-2 shadow-[inset_2px_0_0_var(--accent-text)]',
       )}
     >
       {children}
@@ -66,14 +68,16 @@ export function ResultRow({
   option, result, typed, active, now, onChoose,
 }: { option: SearchOption; result: PlayerSearchResult; typed: string; active: boolean; now: number; onChoose(option: SearchOption): void }) {
   const game = useGame();
-  const rank = rankLabel(rankState(game, result.rankId, null));
+  const rankShown = rankState(game, result.rankId, null);
+  // The badge shows the short name ("S5"); the full name follows it. Unranked and unknown show a mark, not a word.
+  const rank = rankShown.kind === 'rank' ? `${rankShown.shortName} ${rankShown.name}` : rankLabel(rankShown);
   const played = timeAgo(result.lastPlayedAt, now);
   const label = [
     result.name,
-    result.exactMatch ? 'exact match' : null,
-    `level ${formatNumber(result.level)}`,
+    result.exactMatch ? 'Exact match' : null,
+    `Lv ${formatNumber(result.level)}`,
     rank,
-    `last played ${played}`,
+    played,
   ]
     .filter((part) => part !== null)
     .join(', ');
@@ -109,7 +113,7 @@ export function SuggestionRow({
 }: { option: SearchOption; at: IsoDateTime | null; active: boolean; now: number; onChoose(option: SearchOption): void }) {
   const { player } = option;
   const when = at === null ? null : timeAgo(at, now);
-  const label = [player.name, PLATFORM_LABEL[player.platform], when === null ? null : `searched ${when}`]
+  const label = [player.name, PLATFORM_LABEL[player.platform], when]
     .filter((part) => part !== null)
     .join(', ');
   return (

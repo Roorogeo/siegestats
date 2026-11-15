@@ -5,12 +5,13 @@ import type { Platform } from '@shared/types/primitives';
 import { playerPath } from '../app/routes';
 import { useSettings } from '../app/SettingsProvider';
 import { ariaKeyShortcuts, hotkeyParts } from '../app/shortcuts';
+import { PLATFORM_LABEL } from '../components';
 import { useGlobalSearchRequests } from '../features/search/open-search';
 import { SearchAnnouncer, SearchPanel } from '../features/search/SearchPanel';
 import { usePlayerSearch } from '../features/search/usePlayerSearch';
 import { cn } from '../lib/cn';
 import { Kbd, TextInput } from '../ui';
-import { PLATFORM_LABEL, PLATFORMS } from './platforms';
+import { PLATFORMS } from './platforms';
 import { FLOATING_SHADOW } from './Popover';
 
 const SUGGESTIONS = ['mine', 'favorites', 'recent'] as const;

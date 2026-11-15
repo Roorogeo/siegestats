@@ -1,8 +1,9 @@
 import type { GameIndex } from '@shared/game-config';
-import type { PlaylistKind } from '@shared/types/game-config';
+import type { PlaylistDef } from '@shared/types/game-config';
 import type { MatchDetail, MatchPlayer, MatchResult, MatchTeam, RoundOutcome } from '@shared/types/match';
 import type { PlayerKey } from '@shared/types/player';
 import type { OperatorId, Ratio, TeamId } from '@shared/types/primitives';
+import { samePlayer } from '@shared/util/player';
 import { kd, ratio } from '@shared/util/stats';
 
 /**
@@ -80,8 +81,6 @@ export interface MatchView {
   rounds: RoundView[] | null;
 }
 
-const samePlayer = (a: PlayerKey, b: PlayerKey): boolean => a.platform === b.platform && a.id === b.id;
-
 /** Sum of known values; null as soon as one is unknown. */
 function sumKnown(values: readonly (number | null)[]): number | null {
   let total = 0;
@@ -109,15 +108,16 @@ export function teamTotals(players: readonly MatchPlayer[]): TeamTotals {
 }
 
 /**
- * When a match goes past regulation. The game config has no match format, so the rule follows the playlist's kind
- * (never its id), as the mock source plays them: Ranked and Legend Division go to overtime at 3-3, Standard plays one
- * deciding round at 3-3. Other kinds, and a playlist the config does not know, mark nothing.
+ * When a match goes past regulation, from the playlist's rules in the game config: overtime from an at-at tie (Ranked,
+ * Legend Division), or one deciding round at decidingRoundAt-decidingRoundAt (Standard). A playlist with neither, and
+ * one the config does not know, marks nothing.
  */
-const EXTRA_AFTER_TIE: Partial<Record<PlaylistKind, { at: number; extra: ExtraRound }>> = {
-  ranked: { at: 3, extra: 'overtime' },
-  legend: { at: 3, extra: 'overtime' },
-  standard: { at: 3, extra: 'decider' },
-};
+function extraAfterTie(playlist: PlaylistDef | null): { at: number; extra: ExtraRound } | null {
+  if (playlist === null) return null;
+  if (playlist.overtime !== null) return { at: playlist.overtime.at, extra: 'overtime' };
+  if (playlist.decidingRoundAt !== null) return { at: playlist.decidingRoundAt, extra: 'decider' };
+  return null;
+}
 
 /** Builds the screen's view of a match. `pov` is the player the match was opened from (the route's ?pov=). */
 export function buildMatchView(match: MatchDetail, pov: PlayerKey | null, game: GameIndex): MatchView {
@@ -157,10 +157,13 @@ export function buildMatchView(match: MatchDetail, pov: PlayerKey | null, game: 
   return { match, povKnown, povSlot, povPlayer, teams, rounds: buildRounds(match, first.id, game) };
 }
 
-function buildRounds(match: MatchDetail, firstId: TeamId, game: GameIndex): RoundView[] | null {
+/**
+ * The rounds in order, each with the running score (the team `firstId` first) and whether it was played past
+ * regulation by the playlist's rules. null when the source has no round data.
+ */
+export function buildRounds(match: MatchDetail, firstId: TeamId, game: GameIndex): RoundView[] | null {
   if (match.rounds === null) return null;
-  const kind = match.playlistId === null ? null : (game.playlist(match.playlistId)?.kind ?? null);
-  const rule = kind === null ? undefined : EXTRA_AFTER_TIE[kind];
+  const rule = extraAfterTie(match.playlistId === null ? null : game.playlist(match.playlistId));
   const ordered = [...match.rounds].sort((x, y) => x.number - y.number);
   let own = 0;
   let opp = 0;

@@ -35,7 +35,9 @@ export function SettingsPage() {
   return (
     <div className="flex h-full min-h-0">
       <aside className="flex w-52 shrink-0 flex-col border-r border-border">
-        <h1 className="px-5 pt-5 pb-3 text-[18px] font-semibold text-text">Settings</h1>
+        <h1 tabIndex={-1} className="px-5 pt-5 pb-3 text-[18px] font-semibold text-text outline-none">
+          Settings
+        </h1>
         <nav aria-label="Settings sections" className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
           <ul className="space-y-0.5">
             {SETTINGS_SECTIONS.map((id) => {

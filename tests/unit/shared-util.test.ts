@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { canonicalJson, jsonCopy } from '@shared/util/json';
+import { playerKeyString, samePlayer, toPlayerRef } from '@shared/util/player';
 import { createRandom, hashSeed } from '@shared/util/random';
 import { damagePerRound, headshotPct, kd, killsPerMatch, ratio, roundWinRate, winRate } from '@shared/util/stats';
 import { addMs, isIsoDateTime, toIso, toMs } from '@shared/util/time';
-import type { IsoDateTime } from '@shared/types/primitives';
+import type { PlayerSearchResult } from '@shared/types/player';
+import type { IsoDateTime, PlayerId } from '@shared/types/primitives';
 
 describe('stat helpers', () => {
   test('a zero denominator gives null, never 0 or NaN', () => {
@@ -97,5 +99,23 @@ describe('time helpers', () => {
     const t = '2026-11-15T12:00:00.000Z' as IsoDateTime;
     expect(addMs(t, 60_000)).toBe('2026-11-15T12:01:00.000Z');
     expect(toIso(toMs(t))).toBe(t);
+  });
+});
+
+describe('player helpers', () => {
+  const result: PlayerSearchResult = {
+    platform: 'psn', id: 'abc' as PlayerId, name: 'Otter', avatarUrl: null, level: 12, rankId: null, lastPlayedAt: null, exactMatch: true,
+  };
+
+  test('one string form of a key, and the same player only on the same platform', () => {
+    expect(playerKeyString(result)).toBe('psn:abc');
+    expect(samePlayer(result, { platform: 'psn', id: 'abc' as PlayerId })).toBe(true);
+    expect(samePlayer(result, { platform: 'pc', id: 'abc' as PlayerId })).toBe(false);
+    expect(samePlayer(result, { platform: 'psn', id: 'abd' as PlayerId })).toBe(false);
+  });
+
+  test('toPlayerRef keeps only the PlayerRef fields', () => {
+    expect(toPlayerRef(result)).toEqual({ platform: 'psn', id: 'abc', name: 'Otter', avatarUrl: null });
+    expect(Object.keys(toPlayerRef(result)).sort()).toEqual(['avatarUrl', 'id', 'name', 'platform']);
   });
 });

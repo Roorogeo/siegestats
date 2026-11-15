@@ -6,41 +6,11 @@ import { useGame } from '../../app/GameConfigProvider';
 import { Avatar, OperatorBadge, SIDE_LABEL } from '../../components';
 import { cn } from '../../lib/cn';
 import { DASH } from '../../lib/format';
-import { FLOATING_SHADOW, SectionCard, Skeleton, type QueryLike } from '../../ui';
+import { FLOATING_SHADOW, gridTarget, SectionCard, Skeleton, type GridCell, type QueryLike } from '../../ui';
 import { byScore, type MatchView, type RoundView } from './match-view';
 import { LABEL_COLUMN, roundTableMinWidth, WON_TINT } from './round-columns';
 import { povWon, RoundHeading } from './RoundTimeline';
 import { TeamSwatch } from './team-colors';
-
-interface Cell {
-  row: number;
-  col: number;
-}
-
-/**
- * Where a key moves the focus in a rows x cols grid (the ARIA grid pattern): arrows by one cell, Home / End to the
- * row's ends, Ctrl+Home / Ctrl+End to the grid's corners. Alt+arrows stay the app's back / forward.
- */
-export function gridTarget(key: string, mods: { ctrl: boolean; alt: boolean; meta: boolean }, at: Cell, rows: number, cols: number): Cell | null {
-  if (mods.alt || mods.meta) return null;
-  const clamp = (value: number, size: number): number => Math.min(size - 1, Math.max(0, value));
-  switch (key) {
-    case 'ArrowRight':
-      return mods.ctrl ? null : { row: at.row, col: clamp(at.col + 1, cols) };
-    case 'ArrowLeft':
-      return mods.ctrl ? null : { row: at.row, col: clamp(at.col - 1, cols) };
-    case 'ArrowDown':
-      return mods.ctrl ? null : { row: clamp(at.row + 1, rows), col: at.col };
-    case 'ArrowUp':
-      return mods.ctrl ? null : { row: clamp(at.row - 1, rows), col: at.col };
-    case 'Home':
-      return mods.ctrl ? { row: 0, col: 0 } : { row: at.row, col: 0 };
-    case 'End':
-      return mods.ctrl ? { row: rows - 1, col: cols - 1 } : { row: at.row, col: cols - 1 };
-    default:
-      return null;
-  }
-}
 
 /** The pick in a cell, in words, shown above the cell while it has keyboard focus. */
 function PickTooltip({ operatorId, round, player, alignEnd }: { operatorId: OperatorId | null; round: number; player: string; alignEnd: boolean }) {
@@ -76,8 +46,8 @@ interface GridRow {
 
 function PicksGrid({ view, rounds }: { view: MatchView; rounds: readonly RoundView[] }) {
   const tableRef = useRef<HTMLTableElement>(null);
-  const [active, setActive] = useState<Cell>({ row: 0, col: 0 });
-  const [shown, setShown] = useState<Cell | null>(null);
+  const [active, setActive] = useState<GridCell>({ row: 0, col: 0 });
+  const [shown, setShown] = useState<GridCell | null>(null);
   const [first, second] = view.teams;
   // Same order as the scoreboards above (by score), so a player is found in the same place.
   const groups = [
@@ -87,10 +57,10 @@ function PicksGrid({ view, rounds }: { view: MatchView; rounds: readonly RoundVi
   const rowCount = first.team.players.length + second.team.players.length;
   const cols = rounds.length;
 
-  const focusCell = (cell: Cell): void => {
+  const focusCell = (cell: GridCell): void => {
     tableRef.current?.querySelector<HTMLElement>(`[data-cell="${cell.row}:${cell.col}"]`)?.focus();
   };
-  const onKeyDown = (event: KeyboardEvent<HTMLElement>, at: Cell): void => {
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>, at: GridCell): void => {
     const next = gridTarget(event.key, { ctrl: event.ctrlKey, alt: event.altKey, meta: event.metaKey }, at, rowCount, cols);
     if (!next) {
       if (event.key === 'Escape') setShown(null);
@@ -99,7 +69,7 @@ function PicksGrid({ view, rounds }: { view: MatchView; rounds: readonly RoundVi
     event.preventDefault();
     focusCell(next);
   };
-  const onFocus = (event: FocusEvent<HTMLElement>, at: Cell): void => {
+  const onFocus = (event: FocusEvent<HTMLElement>, at: GridCell): void => {
     setActive(at);
     // Keyboard focus shows the name; a pointer already gets the badge's own title.
     setShown(event.currentTarget.matches(':focus-visible') ? at : null);
@@ -156,7 +126,7 @@ function PicksGrid({ view, rounds }: { view: MatchView; rounds: readonly RoundVi
                     aria-current={isPov || undefined}
                     className={cn(
                       'h-9 border-b border-border px-4 text-left font-normal',
-                      isPov && 'relative bg-surface-2 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
+                      isPov && 'relative bg-surface-2 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent-text',
                     )}
                   >
                     <span className="flex min-w-0 items-center gap-2">

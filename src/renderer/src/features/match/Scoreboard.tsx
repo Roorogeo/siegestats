@@ -8,17 +8,12 @@ import { useGame } from '../../app/GameConfigProvider';
 import { playerPath } from '../../app/routes';
 import { Avatar, OperatorBadge } from '../../components';
 import { DASH, formatKd, formatNumber, formatRatio } from '../../lib/format';
-import { DataTable, SectionCard, type Column, type QueryLike } from '../../ui';
+import { DataTable, SectionCard, type Column, type QueryLike, type SortDirection } from '../../ui';
 import { RESULT_VERB, scoreText, TEAM_NAME, type MatchView, type TeamTotals } from './match-view';
 import { TeamSwatch } from './team-colors';
 
-type ScoreRow = { kind: 'player'; player: MatchPlayer } | { kind: 'total'; totals: TeamTotals };
-
 /** Operators shown in a row; the rest are summed up as "+N" (a 9-round match can see 9 different picks). */
 const MAX_OPERATORS = 5;
-
-/** The totals row answers null to every sort, and DataTable keeps nulls last in both directions: it stays at the bottom. */
-const playerValue = <T,>(row: ScoreRow, get: (player: MatchPlayer) => T): T | null => (row.kind === 'player' ? get(row.player) : null);
 
 function PlayerCell({ player, remoteAvatar }: { player: MatchPlayer; remoteAvatar: boolean }) {
   const ref = player.player;
@@ -58,30 +53,35 @@ function OperatorsCell({ ids }: { ids: MatchPlayer['operatorIds'] }) {
   );
 }
 
-function columns(game: GameIndex, remoteAvatar: boolean): Column<ScoreRow>[] {
-  const stat = (
-    id: string,
-    header: string,
-    headerLabel: string,
-    player: (p: MatchPlayer) => number | null,
-    total: (t: TeamTotals) => number | null,
-    format: (value: number | null) => string,
-  ): Column<ScoreRow> => ({
-    id,
-    header,
-    ...(headerLabel === header ? {} : { headerLabel }),
-    numeric: true,
-    width: '4.5rem',
-    cell: (row) => format(row.kind === 'player' ? player(row.player) : total(row.totals)),
-    sortValue: (row) => playerValue(row, player),
-  });
+/** A figure column: the player's value in a row, the team's in the footer. */
+interface Stat {
+  id: string;
+  header: string;
+  headerLabel: string;
+  player(p: MatchPlayer): number | null;
+  total(t: TeamTotals): number | null;
+  format(value: number | null): string;
+  firstDirection?: SortDirection;
+}
+
+const count = (value: number | null): string => formatNumber(value);
+const STATS: readonly Stat[] = [
+  { id: 'kills', header: 'K', headerLabel: 'Kills', player: (p) => p.kills, total: (t) => t.kills, format: count },
+  { id: 'deaths', header: 'D', headerLabel: 'Deaths', player: (p) => p.deaths, total: (t) => t.deaths, format: count, firstDirection: 'asc' },
+  { id: 'assists', header: 'A', headerLabel: 'Assists', player: (p) => p.assists, total: (t) => t.assists, format: count },
+  { id: 'kd', header: 'K/D', headerLabel: 'K/D', player: (p) => kd(p.kills, p.deaths), total: (t) => t.kd, format: formatKd },
+  { id: 'hs', header: 'HS%', headerLabel: 'Headshot percentage', player: (p) => p.headshotPct, total: (t) => t.headshotPct, format: (v) => formatRatio(v) },
+  { id: 'damage', header: 'Damage', headerLabel: 'Damage', player: (p) => p.damage, total: (t) => t.damage, format: count },
+  { id: 'score', header: 'Score', headerLabel: 'Score', player: (p) => p.score, total: (t) => t.score, format: count },
+];
+
+function columns(game: GameIndex, remoteAvatar: boolean): Column<MatchPlayer>[] {
   return [
     {
       id: 'player',
       header: 'Player',
-      cell: (row) =>
-        row.kind === 'player' ? <PlayerCell player={row.player} remoteAvatar={remoteAvatar} /> : <span className="pl-7 text-text">Team total</span>,
-      sortValue: (row) => playerValue(row, (p) => p.name.toLowerCase()),
+      cell: (p) => <PlayerCell player={p} remoteAvatar={remoteAvatar} />,
+      sortValue: (p) => p.name.toLowerCase(),
       firstDirection: 'asc',
     },
     {
@@ -89,19 +89,41 @@ function columns(game: GameIndex, remoteAvatar: boolean): Column<ScoreRow>[] {
       header: 'Operators',
       headerLabel: 'Operators played, most played first',
       width: '10rem',
-      cell: (row) => (row.kind === 'player' ? <OperatorsCell ids={row.player.operatorIds} /> : null),
+      cell: (p) => <OperatorsCell ids={p.operatorIds} />,
       // Most-played operator, A to Z.
-      sortValue: (row) => playerValue(row, (p) => operatorName(game, p.operatorIds[0])),
+      sortValue: (p) => operatorName(game, p.operatorIds[0]),
       firstDirection: 'asc',
     },
-    stat('kills', 'K', 'Kills', (p) => p.kills, (t) => t.kills, (v) => formatNumber(v)),
-    { ...stat('deaths', 'D', 'Deaths', (p) => p.deaths, (t) => t.deaths, (v) => formatNumber(v)), firstDirection: 'asc' },
-    stat('assists', 'A', 'Assists', (p) => p.assists, (t) => t.assists, (v) => formatNumber(v)),
-    stat('kd', 'K/D', 'K/D', (p) => kd(p.kills, p.deaths), (t) => t.kd, formatKd),
-    stat('hs', 'HS%', 'Headshot percentage', (p) => p.headshotPct, (t) => t.headshotPct, (v) => formatRatio(v)),
-    stat('damage', 'Damage', 'Damage', (p) => p.damage, (t) => t.damage, (v) => formatNumber(v)),
-    stat('score', 'Score', 'Score', (p) => p.score, (t) => t.score, (v) => formatNumber(v)),
+    ...STATS.map(
+      (stat): Column<MatchPlayer> => ({
+        id: stat.id,
+        header: stat.header,
+        ...(stat.headerLabel === stat.header ? {} : { headerLabel: stat.headerLabel }),
+        numeric: true,
+        width: '4.5rem',
+        cell: (p) => stat.format(stat.player(p)),
+        sortValue: stat.player,
+        ...(stat.firstDirection ? { firstDirection: stat.firstDirection } : {}),
+      }),
+    ),
   ];
+}
+
+/** The team's totals under the players: the footer row, whatever the sort. */
+function TotalsRow({ totals }: { totals: TeamTotals }) {
+  return (
+    <tr>
+      <th scope="row">
+        <span className="pl-7">Team total</span>
+      </th>
+      <td />
+      {STATS.map((stat) => (
+        <td key={stat.id} className="text-right tabular">
+          {stat.format(stat.total(totals))}
+        </td>
+      ))}
+    </tr>
+  );
 }
 
 function subtitle(view: MatchView, team: MatchTeam, opponent: MatchTeam): string {
@@ -120,7 +142,7 @@ interface ScoreboardProps {
 
 /**
  * One team's scoreboard: avatar and name (a link to the profile when the source names the account), operators played,
- * K, D, A, K/D, HS%, damage and score, sortable by any column (score first), with the team's totals as the last row.
+ * K, D, A, K/D, HS%, damage and score, sortable by any column (score first), with the team's totals in the footer.
  */
 export function Scoreboard({ query, index, pov, busy }: ScoreboardProps) {
   const game = useGame();
@@ -150,7 +172,6 @@ export function Scoreboard({ query, index, pov, busy }: ScoreboardProps) {
           rows={undefined}
           skeletonRows={6}
           rowKey={(_, i) => String(i)}
-          className="[&_tbody>tr:last-child>td]:border-b-0"
         />
       }
       isEmpty={(data) => data.teams[index].team.players.length === 0}
@@ -158,17 +179,16 @@ export function Scoreboard({ query, index, pov, busy }: ScoreboardProps) {
     >
       {(data) => {
         const { team: t, totals } = data.teams[index];
-        const rows: ScoreRow[] = [...t.players.map((player): ScoreRow => ({ kind: 'player', player })), { kind: 'total', totals }];
         return (
           <DataTable
             label={`${data.teams[index].label} scoreboard`}
             columns={cols}
-            rows={rows}
-            rowKey={(row) => (row.kind === 'player' ? `slot-${row.player.slot}` : 'total')}
+            rows={t.players}
+            rowKey={(p) => `slot-${p.slot}`}
             defaultSort={{ columnId: 'score', direction: 'desc' }}
-            isRowCurrent={(row) => row.kind === 'player' && row.player.slot === data.povSlot}
+            isRowCurrent={(p) => p.slot === data.povSlot}
             busy={busy}
-            className="[&_tbody>tr:last-child>td]:bg-surface-2/50 [&_tbody>tr:last-child>td]:font-semibold"
+            footer={<TotalsRow totals={totals} />}
           />
         );
       }}

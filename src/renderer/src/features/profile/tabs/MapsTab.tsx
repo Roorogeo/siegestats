@@ -8,9 +8,9 @@ import { MapBadge } from '../../../components';
 import { formatKd, formatNumber, formatRatio } from '../../../lib/format';
 import { useMaps } from '../../../queries';
 import { DataTable, QueryState, SectionCard, type Column } from '../../../ui';
-import { CardTitle } from '../overview/CardTitle';
+import { CoverageNote } from './CoverageNote';
 import { StatsFilterBar } from './StatsFilterBar';
-import { seasonLabel, statsQuery, useFilterOptions, useStatsFilters } from './stats-filters';
+import { scopeTotal, seasonLabel, statsQuery, useFilterOptions, useStatsFilters } from './stats-filters';
 
 function mapColumns(game: GameIndex): Column<MapStats>[] {
   return [
@@ -56,9 +56,10 @@ export function MapsTab({ player }: { player: PlayerKey }) {
     filters.playlistId === 'all' ? '' : `, ${game.playlist(filters.playlistId)?.name ?? filters.playlistId}`
   }`;
   const played = options.record ? options.record.overall.matches > 0 : null;
+  const expectedMatches = scopeTotal(options.records, filters, 'matches');
 
   return (
-    <SectionCard title={<CardTitle>Maps</CardTitle>} subtitle="Matches, results and rounds per map" flush>
+    <SectionCard title="Maps" subtitle="Matches, results and rounds per map" flush>
       <StatsFilterBar filters={filters} options={options} onChange={setFilters} />
       <QueryState
         query={maps}
@@ -92,9 +93,12 @@ export function MapsTab({ player }: { player: PlayerKey }) {
                   busy={maps.isPlaceholderData}
                 />
               </div>
-              <p className="border-t border-border px-4 py-2.5 text-xs text-text-muted tabular">
-                {formatNumber(data.data.length)} {data.data.length === 1 ? 'map' : 'maps'}, {formatNumber(matches)} matches
-              </p>
+              <div className="border-t border-border px-4 py-2.5">
+                <p className="text-xs text-text-muted tabular">
+                  {formatNumber(data.data.length)} {data.data.length === 1 ? 'map' : 'maps'}, {formatNumber(matches)} matches
+                </p>
+                {!maps.isPlaceholderData && <CoverageNote shown={matches} total={expectedMatches} unit="matches" per="map" filters={filters} />}
+              </div>
             </>
           );
         }}

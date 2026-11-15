@@ -2,16 +2,15 @@ import { Maximize2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { PlayerKey } from '@shared/types/player';
-import type { SeasonId } from '@shared/types/primitives';
-import { useGame } from '../../../app/GameConfigProvider';
+import { useCurrentSeason, useGame } from '../../../app/GameConfigProvider';
 import { matchPath } from '../../../app/routes';
 import { PointsLineChart, pointsSeries, type PointsDatum } from '../../../charts';
 import { formatNumber } from '../../../lib/format';
 import { matchHistoryItems, useCapabilities, useMatches, type MatchHistoryFilter } from '../../../queries';
 import { Button, EmptyState, SectionCard, Skeleton } from '../../../ui';
-import { CardTitle } from './CardTitle';
 import { ChartDialog } from './ChartDialog';
 import { ladderPlaylist } from './ladder';
+import { ProfileFailedNote } from './ProfileFailedNote';
 
 const TITLE = 'Ranked sessions';
 const CHART_LABEL = 'Ranked points after every match';
@@ -19,21 +18,21 @@ const CHART_HEIGHT = 240;
 /** The provider's page size cap; a ranked season is well under it, and further pages load on their own. */
 const PAGE_SIZE = 100;
 
-/**
- * Ranked sessions: RP after every Ranked match of the current season, oldest first, on a y-axis labelled with the
- * season's rank divisions, a faint divider between sessions (design question 16). A point opens its match. Expand
- * shows the same chart at full size in a dialog.
- */
 interface RankedSessionsCardProps {
   player: PlayerKey;
-  /** The provider's current season for this player (from the profile); null until the profile has loaded. */
-  seasonId: SeasonId | null;
-  /** The profile failed to load, so the season is not coming. */
+  /** The profile failed to load (with no copy): the header reports it, so a failure here too is only a quiet note. */
   profileFailed: boolean;
 }
 
-export function RankedSessionsCard({ player, seasonId, profileFailed }: RankedSessionsCardProps) {
+/**
+ * Ranked sessions: RP after every Ranked match of the season in force (useCurrentSeason(), the provider's rule
+ * too), oldest first, on a y-axis labelled with the season's rank divisions, a faint divider between sessions
+ * (design question 16). A point opens its match. Expand shows the same chart at full size in a dialog. The season
+ * comes from the config and the clock, so the matches load alongside the profile rather than after it.
+ */
+export function RankedSessionsCard({ player, profileFailed }: RankedSessionsCardProps) {
   const game = useGame();
+  const seasonId = useCurrentSeason().id;
   const navigate = useNavigate();
   const ladder = ladderPlaylist(game);
   const capabilities = useCapabilities().data;
@@ -41,8 +40,9 @@ export function RankedSessionsCard({ player, seasonId, profileFailed }: RankedSe
   const opener = useRef<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
 
-  const filter: MatchHistoryFilter | null =
-    ladder && seasonId ? { player, playlistIds: [ladder.id], mapId: 'all', period: { kind: 'season', seasonId }, limit: PAGE_SIZE } : null;
+  const filter: MatchHistoryFilter | null = ladder
+    ? { player, playlistIds: [ladder.id], mapId: 'all', period: { kind: 'season', seasonId }, limit: PAGE_SIZE }
+    : null;
   const matches = useMatches(filter);
   const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = matches;
 
@@ -53,8 +53,8 @@ export function RankedSessionsCard({ player, seasonId, profileFailed }: RankedSe
   }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
 
   const series = useMemo(() => pointsSeries(matchHistoryItems(matches.data)), [matches.data]);
-  const ranks = seasonId ? (game.rankSystemFor(seasonId)?.ranks ?? null) : null;
-  const season = seasonId ? game.season(seasonId) : null;
+  const ranks = game.rankSystemFor(seasonId)?.ranks ?? null;
+  const season = game.season(seasonId);
   const complete = matches.data !== undefined && (!hasNextPage || isFetchNextPageError);
   const noPerMatchPoints = capabilities?.rankChangePerMatch === false;
   const latest = series.at(-1);
@@ -68,9 +68,18 @@ export function RankedSessionsCard({ player, seasonId, profileFailed }: RankedSe
       : 'RP after every Ranked match';
   const skeleton = <Skeleton className="h-full w-full" />;
 
+  // The source failed for the profile and for this too: one error on the page is enough (the header's).
+  if (profileFailed && matches.data === undefined && matches.status === 'error' && !matches.isFetching) {
+    return (
+      <SectionCard title={TITLE} subtitle="RP after every Ranked match">
+        <ProfileFailedNote />
+      </SectionCard>
+    );
+  }
+
   return (
     <SectionCard
-      title={<CardTitle>{TITLE}</CardTitle>}
+      title={TITLE}
       subtitle={subtitle}
       actions={
         complete && series.length > 0 ? (
@@ -90,15 +99,7 @@ export function RankedSessionsCard({ player, seasonId, profileFailed }: RankedSe
       }
       query={matches}
       skeleton={<div style={{ height: CHART_HEIGHT }}>{skeleton}</div>}
-      idle={
-        ladder === null ? (
-          <EmptyState className="py-6" title="Not available" description="The game data names no Ranked ladder playlist." />
-        ) : profileFailed ? (
-          <EmptyState className="py-6" title="Waiting for the profile" description="This chart needs the player's current season. Retry the profile above." />
-        ) : (
-          <div style={{ height: CHART_HEIGHT }}>{skeleton}</div>
-        )
-      }
+      idle={<EmptyState className="py-6" title="Not available" description="The game data names no Ranked ladder playlist." />}
       loadingLabel="Loading ranked matches"
       isEmpty={() => complete && series.length === 0}
       empty={

@@ -62,7 +62,8 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
               'inline-flex items-center justify-center rounded-[4px] font-medium whitespace-nowrap transition-colors',
               'disabled:pointer-events-none disabled:opacity-50',
               size === 'sm' ? 'px-2.5 text-xs' : 'px-3 text-[13px]',
-              checked ? 'bg-accent text-on-accent' : 'text-text-muted hover:bg-surface hover:text-text',
+              // The inset edge marks the checked segment in themes where the accent fill alone is under 3:1 on the group.
+              checked ? 'bg-accent text-on-accent shadow-[inset_0_0_0_1px_var(--accent-text)]' : 'text-text-muted hover:bg-surface hover:text-text',
             )}
           >
             {option.label}

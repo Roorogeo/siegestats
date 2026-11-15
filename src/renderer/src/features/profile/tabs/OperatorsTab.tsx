@@ -10,9 +10,9 @@ import { OperatorBadge, SIDE_LABEL } from '../../../components';
 import { DASH, formatKd, formatNumber, formatRatio } from '../../../lib/format';
 import { useOperators } from '../../../queries';
 import { DataTable, QueryState, SectionCard, SegmentedControl, type Column } from '../../../ui';
-import { CardTitle } from '../overview/CardTitle';
+import { CoverageNote } from './CoverageNote';
 import { StatsFilterBar } from './StatsFilterBar';
-import { seasonLabel, statsQuery, useFilterOptions, useStatsFilters } from './stats-filters';
+import { scopeTotal, seasonLabel, statsQuery, useFilterOptions, useStatsFilters } from './stats-filters';
 
 type SideChoice = 'all' | Side;
 const SIDE_PARAM = 'oside';
@@ -108,10 +108,12 @@ export function OperatorsTab({ player }: { player: PlayerKey }) {
     filters.playlistId === 'all' ? '' : `, ${game.playlist(filters.playlistId)?.name ?? filters.playlistId}`
   }`;
   const played = options.record ? options.record.overall.matches > 0 : null;
+  // Every round has one operator, so with both sides the rows add up to the scope's rounds when the source covers it.
+  const expectedRounds = side === 'all' ? scopeTotal(options.records, filters, 'rounds') : null;
   const sideWord = side === 'all' ? 'operator' : side === 'attack' ? 'attacker' : 'defender';
 
   return (
-    <SectionCard title={<CardTitle>Operators</CardTitle>} subtitle="Counted over the rounds each operator was picked" flush>
+    <SectionCard title="Operators" subtitle="Counted over the rounds each operator was picked" flush>
       <StatsFilterBar filters={filters} options={options} onChange={setFilters}>
         <SegmentedControl label="Side" size="sm" options={SIDE_OPTIONS} value={side} onChange={setSide} />
       </StatsFilterBar>
@@ -148,9 +150,14 @@ export function OperatorsTab({ player }: { player: PlayerKey }) {
                   busy={operators.isPlaceholderData}
                 />
               </div>
-              <p className="border-t border-border px-4 py-2.5 text-xs text-text-muted tabular">
-                {formatNumber(rows.length)} {rows.length === 1 ? 'operator' : 'operators'}, {formatNumber(rounds)} rounds
-              </p>
+              <div className="border-t border-border px-4 py-2.5">
+                <p className="text-xs text-text-muted tabular">
+                  {formatNumber(rows.length)} {rows.length === 1 ? 'operator' : 'operators'}, {formatNumber(rounds)} rounds
+                </p>
+                {!operators.isPlaceholderData && (
+                  <CoverageNote shown={rounds} total={expectedRounds} unit="rounds" per="operator" filters={filters} />
+                )}
+              </div>
             </>
           );
         }}

@@ -52,7 +52,7 @@ export function SectionCard<T>(props: SectionCardProps<T>) {
     <section aria-labelledby={headingId} className={cn('flex min-w-0 flex-col rounded-card border border-border bg-surface', className)}>
       <header className="flex min-h-11 items-center gap-3 px-4 py-2">
         <div className="min-w-0">
-          <Heading id={headingId} className="truncate text-[13px] font-semibold text-text">
+          <Heading id={headingId} className="truncate text-[15px] leading-6 font-semibold text-text">
             {title}
           </Heading>
           {subtitle !== undefined && <p className="truncate text-xs text-text-muted">{subtitle}</p>}

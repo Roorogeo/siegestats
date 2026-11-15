@@ -3,6 +3,7 @@ import { useId, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import type { Encounter } from '@shared/types/match';
 import type { PlayerKey } from '@shared/types/player';
+import { playerKeyString } from '@shared/util/player';
 import { ratio } from '@shared/util/stats';
 import { matchPath, playerPath } from '../../../app/routes';
 import { Avatar, PlatformLabel } from '../../../components';
@@ -10,10 +11,8 @@ import { formatDateTime, formatNumber, formatRatio, timeAgo } from '../../../lib
 import { useNow } from '../../../lib/useNow';
 import { useEncounters } from '../../../queries';
 import {
-  DataTable, EmptyState, QueryState, SectionCard, ShowMoreButton, TextInput, useShowMore, type Column, type SortState,
+  DataTable, EmptyState, QueryState, SectionCard, ShowMoreButton, sortRows, TextInput, useShowMore, type Column, type SortState,
 } from '../../../ui';
-import { CardTitle } from '../overview/CardTitle';
-import { sortRows } from './sort-rows';
 
 /** Rows shown before "Show N more". */
 const INITIAL_ROWS = 25;
@@ -87,7 +86,7 @@ function EncounterTable({ owner, rows, filter }: { owner: PlayerKey; rows: reado
           label="Encounters"
           columns={columns}
           rows={more.visible}
-          rowKey={(e) => `${e.player.platform}:${e.player.id}`}
+          rowKey={(e) => playerKeyString(e.player)}
           sort={sort}
           onSortChange={setSort}
           manualSort
@@ -115,7 +114,7 @@ export function EncountersTab({ player }: { player: PlayerKey }) {
   const [filter, setFilter] = useState('');
   return (
     <SectionCard
-      title={<CardTitle>Encounters</CardTitle>}
+      title="Encounters"
       subtitle="Players met in two or more matches"
       flush
       actions={

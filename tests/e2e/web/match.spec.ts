@@ -84,11 +84,16 @@ const timeline = (page: Page): Locator => page.getByRole('table', { name: 'Round
 const picks = (page: Page): Locator => page.getByRole('grid', { name: 'Operator picks per round' });
 
 /** A table as text: header names (aria-label, else text) and every body row's cells. */
-async function readTable(table: Locator): Promise<{ headers: string[]; rows: string[][] }> {
-  return table.evaluate((element) => ({
-    headers: [...element.querySelectorAll('thead th')].map((th) => th.getAttribute('aria-label') ?? th.textContent?.trim() ?? ''),
-    rows: [...element.querySelectorAll('tbody tr')].map((tr) => [...tr.querySelectorAll('td, th')].map((cell) => cell.textContent?.trim() ?? '')),
-  }));
+async function readTable(table: Locator): Promise<{ headers: string[]; rows: string[][]; footer: string[][] }> {
+  return table.evaluate((element) => {
+    const cells = (selector: string): string[][] =>
+      [...element.querySelectorAll(selector)].map((tr) => [...tr.querySelectorAll('td, th')].map((cell) => cell.textContent?.trim() ?? ''));
+    return {
+      headers: [...element.querySelectorAll('thead th')].map((th) => th.getAttribute('aria-label') ?? th.textContent?.trim() ?? ''),
+      rows: cells('tbody tr'),
+      footer: cells('tfoot tr'),
+    };
+  });
 }
 
 const toNumber = (text: string): number => Number(text.replace(/,/g, ''));
@@ -131,14 +136,51 @@ test('a match opened from a profile lists that player\'s team first, marks their
   expect(errors).toEqual([]);
 });
 
+test('a match opened from the bottom of a long profile starts at the top with focus on its heading; Back returns to the place left', async ({ page, appUrl }) => {
+  await page.setViewportSize({ width: 1100, height: 700 });
+  const errors = await open(page, appUrl, `/player/${PLAYER.platform}/${PLAYER.id}`);
+  const main = page.locator('main');
+  const heading = page.getByRole('heading', { level: 1 });
+  const views = page.locator('a[href*="#/match/"]');
+  await expect(views.first()).toBeVisible({ timeout: 15_000 });
+
+  // The last "View match" of the history, far down the page, opened from the keyboard.
+  const last = views.last();
+  await last.scrollIntoViewIfNeeded();
+  const left = await main.evaluate((element) => element.scrollTop);
+  expect(left).toBeGreaterThan(300);
+  await last.focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => hashOf(page)).toMatch(/^#\/match\//);
+  await loaded(page);
+
+  // A new screen opens at its top, its heading in view and focused (the link that had focus went with the profile).
+  expect(await main.evaluate((element) => element.scrollTop)).toBe(0);
+  const box = await heading.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
+  expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(700);
+  await expect(heading).toBeFocused();
+
+  // Alt+Left: the profile again, at the offset it was left at, with focus on its heading.
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#/player/${PLAYER.platform}/${PLAYER.id}`);
+  await expect(heading).toHaveText(PLAYER.name, { timeout: 15_000 });
+  await expect(heading).toBeFocused();
+  await expect.poll(() => main.evaluate((element) => element.scrollTop)).toBe(left);
+  expect(errors).toEqual([]);
+});
+
 test('team totals are the sums of the player rows, and the scoreboards sort', async ({ page, appUrl }) => {
   const errors = await openMatchFromProfile(page, appUrl);
   for (const name of ['Your team', 'Opponents']) {
     const table = scoreboard(page, name).getByRole('table');
-    const { headers, rows } = await readTable(table);
-    const total = rows.at(-1) ?? [];
+    const { headers, rows: players, footer } = await readTable(table);
+    // The totals are the table's footer, named by its row header.
+    expect(footer).toHaveLength(1);
+    const total = footer[0] ?? [];
     expect(total[0]).toBe('Team total');
-    const players = rows.slice(0, -1);
+    await expect(table.locator('tfoot').getByRole('rowheader', { name: 'Team total' })).toBeVisible();
     expect(players).toHaveLength(5);
     for (const column of ['Kills', 'Deaths', 'Assists', 'Damage', 'Score']) {
       const index = headers.indexOf(column);
@@ -152,21 +194,23 @@ test('team totals are the sums of the player rows, and the scoreboards sort', as
     expect(total[headers.indexOf('K/D')]).toBe((kills / Math.max(deaths, 1)).toFixed(2));
   }
 
-  // Sorting by kills: highest first, then lowest first; the totals row stays last either way.
+  // Sorting by kills: highest first, then lowest first; the totals stay in the footer, under the players, either way.
   const board = scoreboard(page, 'Your team');
   const kills = board.getByRole('columnheader', { name: 'Kills' });
   await kills.getByRole('button').click();
   await expect(kills).toHaveAttribute('aria-sort', 'descending');
-  let { headers, rows } = await readTable(board.getByRole('table'));
-  let column = rows.slice(0, -1).map((row) => toNumber(row[headers.indexOf('Kills')] ?? ''));
+  let { headers, rows, footer } = await readTable(board.getByRole('table'));
+  let column = rows.map((row) => toNumber(row[headers.indexOf('Kills')] ?? ''));
+  expect(rows).toHaveLength(5);
   expect(column).toEqual([...column].sort((a, b) => b - a));
-  expect(rows.at(-1)?.[0]).toBe('Team total');
+  expect(footer.map((row) => row[0])).toEqual(['Team total']);
   await kills.getByRole('button').click();
   await expect(kills).toHaveAttribute('aria-sort', 'ascending');
-  ({ headers, rows } = await readTable(board.getByRole('table')));
-  column = rows.slice(0, -1).map((row) => toNumber(row[headers.indexOf('Kills')] ?? ''));
+  ({ headers, rows, footer } = await readTable(board.getByRole('table')));
+  column = rows.map((row) => toNumber(row[headers.indexOf('Kills')] ?? ''));
+  expect(rows).toHaveLength(5);
   expect(column).toEqual([...column].sort((a, b) => a - b));
-  expect(rows.at(-1)?.[0]).toBe('Team total');
+  expect(footer.map((row) => row[0])).toEqual(['Team total']);
   expect(errors).toEqual([]);
 });
 
@@ -239,6 +283,22 @@ test('the picks grid works from the keyboard and names the focused pick', async 
   expect(errors).toEqual([]);
 });
 
+test('the point-of-view marks use the accent-text token, which keeps 3:1 on every surface', async ({ page, appUrl }) => {
+  const errors = await openMatchFromProfile(page, appUrl);
+  const accentText = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.backgroundColor = 'var(--accent-text)';
+    document.body.append(probe);
+    const value = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return value;
+  });
+  const bar = (cell: Locator): Promise<string> => cell.evaluate((element) => getComputedStyle(element, '::before').backgroundColor);
+  expect(await bar(scoreboard(page, 'Your team').locator('tr[aria-current="true"] td').first())).toBe(accentText);
+  expect(await bar(picks(page).locator('th[aria-current="true"]'))).toBe(accentText);
+  expect(errors).toEqual([]);
+});
+
 test('a player name in a scoreboard opens that profile', async ({ page, appUrl }) => {
   const errors = await openMatchFromProfile(page, appUrl);
   const link = scoreboard(page, 'Opponents').getByRole('link').first();
@@ -285,14 +345,14 @@ test('unknown values show as dashes, and missing round data as an empty state', 
   const errors = await openMatchFromProfile(page, appUrl);
   await expect(page.getByTestId('match-header')).toContainText('Recorded on this PC');
   const board = scoreboard(page, 'Your team').getByRole('table');
-  const { headers, rows } = await readTable(board);
+  const { headers, rows, footer } = await readTable(board);
   for (const column of ['Assists', 'Headshot percentage', 'Damage']) {
     const index = headers.indexOf(column);
-    for (const row of rows) expect(row[index], column).toBe(DASH);
+    for (const row of [...rows, ...footer]) expect(row[index], column).toBe(DASH);
   }
   // Known values still add up.
   const kills = headers.indexOf('Kills');
-  expect(toNumber(rows.at(-1)?.[kills] ?? '')).toBe(rows.slice(0, -1).reduce((n, row) => n + toNumber(row[kills] ?? ''), 0));
+  expect(toNumber(footer[0]?.[kills] ?? '')).toBe(rows.reduce((n, row) => n + toNumber(row[kills] ?? ''), 0));
   await expect(page.getByRole('region', { name: 'Round by round' })).toContainText('This source has no round data for this match');
   await expect(page.getByRole('region', { name: 'Operator picks per round' })).toContainText('No operator picks');
   expect(errors).toEqual([]);

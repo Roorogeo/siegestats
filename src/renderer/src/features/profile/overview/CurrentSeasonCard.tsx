@@ -3,13 +3,13 @@ import type { PlaylistDef } from '@shared/types/game-config';
 import type { Side } from '@shared/types/primitives';
 import type { OperatorStats, PlaylistStats, SeasonRecord } from '@shared/types/stats';
 import { kd, roundWinRate, winRate } from '@shared/util/stats';
-import { useGame } from '../../../app/GameConfigProvider';
+import { useCurrentSeason, useGame } from '../../../app/GameConfigProvider';
 import { OperatorBadge, RankBadge, rankState, SIDE_LABEL } from '../../../components';
 import { formatKd, formatNumber, formatRatio } from '../../../lib/format';
 import type { StatsResult } from '../../../queries';
-import { DataTable, SectionCard, ShowMoreButton, Skeleton, StatTile, useShowMore, type Column } from '../../../ui';
-import { CardTitle, SubHeading } from './CardTitle';
-import { ladderPlaylist, ladderStats, POOL_LABEL } from './ladder';
+import { DataTable, SectionCard, ShowMoreButton, Skeleton, StatTile, SubHeading, useShowMore, type Column } from '../../../ui';
+import { ladderPlaylist, ladderRankText, ladderStats, POOL_LABEL } from './ladder';
+import { ProfileFailedNote } from './ProfileFailedNote';
 
 /** Playlists listed before "Show more". */
 const PLAYLISTS_SHOWN = 3;
@@ -34,10 +34,10 @@ function CurrentSeasonSkeleton() {
 
 /**
  * The Ranked standing: division badge, name and RP (the season's peak is in the Peak ranks card beside it). With no
- * division yet it says why, from the data alone: still in placements (ranked matches played, no rank yet) or unranked
- * (no ranked matches).
+ * division yet it says why, from the data alone (ladderRankText): placements (ranked matches played, no rank yet) or
+ * unranked (no ranked matches).
  */
-function RankCell({ stats }: { stats: PlaylistStats | null }) {
+function RankCell({ stats, isCurrent }: { stats: PlaylistStats | null; isCurrent: boolean }) {
   const game = useGame();
   const rank = stats?.standing?.rank ?? null;
   const state = rankState(game, rank?.rankId ?? null, rank?.points ?? null);
@@ -59,7 +59,7 @@ function RankCell({ stats }: { stats: PlaylistStats | null }) {
       detail = `${formatNumber(state.points)} RP`;
       break;
     case 'unranked':
-      name = played > 0 ? 'In placements' : 'Unranked';
+      name = ladderRankText(stats, isCurrent) ?? 'Unranked';
       detail = played > 0 ? `${formatNumber(played)} ranked ${played === 1 ? 'match' : 'matches'}` : 'No ranked matches';
       break;
   }
@@ -136,11 +136,12 @@ function PlaylistTable({ rows }: { rows: readonly PlaylistStats[] }) {
 }
 
 function CurrentSeasonBody({ record, ladder }: { record: SeasonRecord; ladder: PlaylistDef | null }) {
+  const isCurrent = record.seasonId === useCurrentSeason().id;
   const o = record.overall;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] divide-x divide-border rounded-card border border-border">
-        <RankCell stats={ladderStats(record, ladder)} />
+        <RankCell stats={ladderStats(record, ladder)} isCurrent={isCurrent} />
         <StatTile bare className="px-3 py-2.5" label="K/D" value={formatKd(kd(o.kills, o.deaths))} sub={`${formatNumber(o.kills)} K · ${formatNumber(o.deaths)} D`} />
         <StatTile
           bare
@@ -165,7 +166,8 @@ function CurrentSeasonBody({ record, ladder }: { record: SeasonRecord; ladder: P
 
 /**
  * Current season: Ranked rank and RP, K/D, win rate and headshot share (computed from the counts), the most-played
- * attacker and defender (design question 15) and one line per playlist, top three first.
+ * attacker and defender (design question 15) and one line per playlist, top three first. The card reads the
+ * profile, whose failure the header reports (with Retry): here it is only a quiet note, not a second alert.
  */
 export function CurrentSeasonCard({ profile }: { profile: StatsResult<'getProfile'> }) {
   const game = useGame();
@@ -173,9 +175,16 @@ export function CurrentSeasonCard({ profile }: { profile: StatsResult<'getProfil
   const record = profile.data?.data.currentSeason;
   const season = record ? game.season(record.seasonId) : null;
   const matches = record?.overall.matches ?? 0;
+  if (profile.data === undefined && profile.status === 'error' && !profile.isFetching) {
+    return (
+      <SectionCard title="Current season">
+        <ProfileFailedNote />
+      </SectionCard>
+    );
+  }
   return (
     <SectionCard
-      title={<CardTitle>Current season</CardTitle>}
+      title="Current season"
       subtitle={
         record
           ? `${season?.name ?? record.seasonId} · ${formatNumber(matches)} ${matches === 1 ? 'match' : 'matches'} · ${POOL_LABEL[record.platformFamily]} pool`

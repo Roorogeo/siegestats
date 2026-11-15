@@ -1,9 +1,7 @@
-import type { PlayerKey } from '@shared/types/player';
 import type { ProfileSnapshot } from '@shared/types/storage';
 import { jsonCopy } from '@shared/util/json';
+import { playerKeyString } from '@shared/util/player';
 import type { SnapshotStore } from '../ports';
-
-export const playerKeyString = (player: PlayerKey): string => `${player.platform}:${player.id}`;
 
 /** Profile snapshots in memory (until SQLite arrives in phase 6): empty again after a restart. */
 export function createMemorySnapshotStore(): SnapshotStore {

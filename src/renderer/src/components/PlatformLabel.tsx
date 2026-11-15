@@ -1,7 +1,9 @@
 import { Gamepad2, Monitor } from 'lucide-react';
 import type { Platform } from '@shared/types/primitives';
 import { cn } from '../lib/cn';
-import { PLATFORM_LABEL } from '../shell/platforms';
+
+/** A platform's name in words: the one list of them in the renderer. */
+export const PLATFORM_LABEL: Readonly<Record<Platform, string>> = { pc: 'PC', psn: 'PlayStation', xbl: 'Xbox' };
 
 const SHORT: Readonly<Record<Platform, string>> = { pc: 'PC', psn: 'PS', xbl: 'XB' };
 

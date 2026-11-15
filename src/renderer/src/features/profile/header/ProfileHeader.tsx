@@ -4,7 +4,7 @@ import { Avatar, PlatformLabel } from '../../../components';
 import { formatNumber, timeAgo, updatedAgo } from '../../../lib/format';
 import { useNow } from '../../../lib/useNow';
 import type { StatsResult } from '../../../queries';
-import { Badge, QueryState, Skeleton } from '../../../ui';
+import { Badge, LoadingHeading, QueryState, Skeleton } from '../../../ui';
 import type { ProfileTabId } from '../profile-tabs';
 import { HeaderActions } from './HeaderActions';
 import { PlatformSwitch } from './PlatformSwitch';
@@ -29,6 +29,12 @@ function HeaderSkeleton() {
   );
 }
 
+/**
+ * The page's h1 can take focus from code only (tabIndex -1): the shell moves focus to it after a screen change, and
+ * My Profile after pinning. No outline then: it is a heading, not a control, and the focus is never from Tab.
+ */
+const HEADING_FOCUS = 'outline-none';
+
 const Dot = () => (
   <span aria-hidden className="text-text-muted">
     ·
@@ -39,12 +45,15 @@ function HeaderBody({ fetched, mine }: { fetched: Fetched<PlayerProfile>; mine: 
   const now = useNow();
   const { player, level, lastPlayedAt } = fetched.data;
   const stale = fetched.from === 'stale_cache';
+
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3">
       <Avatar player={player} size="xl" />
       <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1">
         <div className="flex min-w-0 items-center gap-2">
-          <h1 className="selectable min-w-0 truncate text-lg leading-7 font-semibold text-text">{player.name}</h1>
+          <h1 tabIndex={-1} className={`selectable min-w-0 truncate text-lg leading-7 font-semibold text-text ${HEADING_FOCUS}`}>
+            {player.name}
+          </h1>
           {mine && <Badge>Your account</Badge>}
         </div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-muted">
@@ -79,7 +88,8 @@ export function ProfileHeader({ profile, mine, tab }: ProfileHeaderProps) {
     <header className="rounded-card border border-border bg-surface">
       <div aria-hidden className="hidden h-14 rounded-t-[calc(var(--radius-card)-1px)] bg-linear-to-r from-accent to-accent-2 specialty:block" />
       <div className="px-5 py-4 specialty:mx-3 specialty:-mt-7 specialty:rounded-t-card specialty:bg-surface specialty:px-2 specialty:pt-3">
-        {!data && <h1 className="sr-only">Player profile</h1>}
+        {/* While the player loads; if it has focus when the name heading replaces it, the focus moves on to that. */}
+        {!data && <LoadingHeading>Player profile</LoadingHeading>}
         <QueryState query={profile} skeleton={<HeaderSkeleton />} loadingLabel="Loading player" compact errorTitle="This player could not be loaded">
           {(fetched) => <HeaderBody fetched={fetched} mine={mine} />}
         </QueryState>

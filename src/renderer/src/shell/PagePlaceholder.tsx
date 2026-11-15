@@ -19,7 +19,9 @@ export function PagePlaceholder({ title, description, phase, icon, emptyTitle, e
     <div className="flex flex-col gap-5 px-6 py-5">
       <header className="flex flex-col gap-1">
         <div className="flex items-center gap-2.5">
-          <h1 className="text-lg font-semibold">{title}</h1>
+          <h1 tabIndex={-1} className="text-lg font-semibold outline-none">
+            {title}
+          </h1>
           <Badge>Phase {phase}</Badge>
         </div>
         <p className="text-[13px] text-text-muted">{description}</p>

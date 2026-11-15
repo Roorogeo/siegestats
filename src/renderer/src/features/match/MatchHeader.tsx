@@ -7,7 +7,7 @@ import { MapBadge } from '../../components';
 import { cn } from '../../lib/cn';
 import { formatDate, formatDateTime, formatDuration, timeAgo } from '../../lib/format';
 import { useNow } from '../../lib/useNow';
-import { Badge, Loading, Skeleton } from '../../ui';
+import { Badge, Loading, LoadingHeading, Skeleton } from '../../ui';
 import { RESULT_WORD, scoreText, TEAM_NAME, type MatchView } from './match-view';
 import { TeamSwatch } from './team-colors';
 
@@ -93,7 +93,14 @@ function FinalScore({ view }: { view: MatchView }) {
 export function MatchHeader({ view }: { view: MatchView | undefined }) {
   const game = useGame();
   const now = useNow();
-  if (!view) return <HeaderSkeleton />;
+  if (!view) {
+    return (
+      <>
+        <LoadingHeading>Match details</LoadingHeading>
+        <HeaderSkeleton />
+      </>
+    );
+  }
   const { match } = view;
   const playlist = match.playlistId === null ? null : game.playlist(match.playlistId);
   const map = match.mapId === null ? null : game.map(match.mapId);
@@ -105,7 +112,7 @@ export function MatchHeader({ view }: { view: MatchView | undefined }) {
         <MapBadge mapId={match.mapId} size="lg" />
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
-            <h1 className="min-w-0 truncate text-lg leading-7 font-semibold text-text">
+            <h1 tabIndex={-1} className="min-w-0 truncate text-lg leading-7 font-semibold text-text outline-none">
               {playlist?.name ?? 'Unknown playlist'} on {map?.name ?? 'an unknown map'}
             </h1>
             {match.origin === 'live' && (

@@ -1,8 +1,8 @@
 import { CalendarClock, Eraser, Gamepad2, Monitor, MoveLeft, MoveRight, PanelBottom, Pin, Power, Search, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { Platform } from '@shared/types/primitives';
 import type { Hotkey, HotkeyAction } from '@shared/types/settings';
 import { useSettings } from '../../app/SettingsProvider';
+import { PLATFORM_LABEL } from '../../components';
 import { hotkeyParts } from '../../app/shortcuts';
 import { Card, Kbd } from '../../ui';
 
@@ -45,7 +45,6 @@ function PlannedSection({ items, note = PHASE_NOTE }: { items: readonly PlannedI
   );
 }
 
-const PLATFORM_LABEL: Record<Platform, string> = { pc: 'PC', psn: 'PlayStation', xbl: 'Xbox' };
 const onOff = (on: boolean): string => (on ? 'on' : 'off');
 
 export function GeneralSection() {

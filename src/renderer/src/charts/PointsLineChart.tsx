@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis, type TooltipContentProps } from 'recharts';
 import type { RankDef } from '@shared/types/game-config';
 import { useGame } from '../app/GameConfigProvider';
-import { rankLabel, rankState } from '../components/RankBadge';
+import { rankLabel, rankState } from '../components/rank-state';
 import { formatDateTime, formatNumber, formatShortDate } from '../lib/format';
 import { DataTable, Delta, type Column } from '../ui';
 import { ChartFrame, TooltipCard } from './ChartFrame';
@@ -121,6 +121,8 @@ export function PointsLineChart({
       table={<DataTable label={`${label} (table)`} columns={columns} rows={[...rows].reverse()} rowKey={(r) => `${r.i}`} stickyHeader maxHeight={`${height}px`} />}
     >
       <LineChart
+        // The svg's <title>: Recharts' keyboard layer makes the svg a focusable application, which needs a name.
+        title={label}
         data={rows}
         margin={{ top: 8, right: 52, bottom: 0, left: 0 }}
         onClick={(state) => {

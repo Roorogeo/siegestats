@@ -1,5 +1,5 @@
 import type { GameIndex } from '@shared/game-config';
-import type { PlaylistKind } from '@shared/types/game-config';
+import type { PlaylistDef, PlaylistKind } from '@shared/types/game-config';
 import type { MatchRound, RoundOutcome } from '@shared/types/match';
 import type { OperatorId, Side, TeamId } from '@shared/types/primitives';
 import type { Random } from '@shared/util/random';
@@ -16,8 +16,12 @@ import type { CompactRounds, MockAccount, OperatorPool, OperatorRounds } from '.
  * (expandRounds() turns them into MatchRound objects when a match is opened).
  */
 
-/** How a playlist kind is played: rounds to win, side swaps, overtime. Derived from the kind, never from a playlist id. */
+/**
+ * How a playlist is played. Overtime and the deciding round come from the playlist's config (the rules the UI
+ * labels); rounds to win in regulation, side swaps and the objective stay internal to the simulator, by kind.
+ */
 interface MatchFormat {
+  /** Rounds to win in regulation. */
   target: number;
   /** Sides swap after this many rounds in regulation; afterwards they alternate every round. */
   swapEvery: number;
@@ -26,18 +30,24 @@ interface MatchFormat {
   objective: 'bomb' | 'mixed' | 'elimination';
 }
 
-export function formatFor(kind: PlaylistKind): MatchFormat {
-  switch (kind) {
-    case 'ranked':
-    case 'legend':
-      return { target: 4, swapEvery: 3, overtime: { at: 3, target: 5 }, objective: 'bomb' };
-    case 'standard':
-      return { target: 4, swapEvery: 3, overtime: null, objective: 'bomb' }; // 3-3 -> one deciding round
-    case 'quick':
-      return { target: 3, swapEvery: 2, overtime: null, objective: 'mixed' };
-    default:
-      return { target: 3, swapEvery: 1, overtime: null, objective: 'elimination' };
-  }
+const KIND_FORMAT: Partial<Record<PlaylistKind, Pick<MatchFormat, 'target' | 'swapEvery' | 'objective'>>> = {
+  ranked: { target: 4, swapEvery: 3, objective: 'bomb' },
+  legend: { target: 4, swapEvery: 3, objective: 'bomb' },
+  standard: { target: 4, swapEvery: 3, objective: 'bomb' },
+  quick: { target: 3, swapEvery: 2, objective: 'mixed' },
+};
+const OTHER_FORMAT: Pick<MatchFormat, 'target' | 'swapEvery' | 'objective'> = { target: 3, swapEvery: 1, objective: 'elimination' };
+
+export function formatFor(playlist: Pick<PlaylistDef, 'kind' | 'overtime' | 'decidingRoundAt'>): MatchFormat {
+  const base = KIND_FORMAT[playlist.kind] ?? OTHER_FORMAT;
+  // A tie at `at`-`at` (overtime or one deciding round) means regulation is first to at + 1.
+  const tieAt = playlist.overtime?.at ?? playlist.decidingRoundAt;
+  return {
+    target: tieAt === null ? base.target : tieAt + 1,
+    swapEvery: base.swapEvery,
+    overtime: playlist.overtime ? { at: playlist.overtime.at, target: playlist.overtime.roundsToWin } : null,
+    objective: base.objective,
+  };
 }
 
 type Objective = 'bomb' | 'secure' | 'hostage' | 'elimination';
@@ -126,14 +136,19 @@ function pickSlot(rng: Random, slots: readonly number[], weight: Float64Array, s
   return last;
 }
 
+/**
+ * `unreleased` flags, per side and by position in GameIndex.operatorsBySide, the operators that did not exist yet in
+ * the match's season: they are never picked.
+ */
 export function simulateMatch(
   rng: Random,
   game: GameIndex,
-  kind: PlaylistKind,
+  playlist: PlaylistDef,
   players: readonly SimPlayer[],
   partySize: Record<TeamId, number>,
+  unreleased: Readonly<Record<Side, Uint8Array>>,
 ): SimResult {
-  const format = formatFor(kind);
+  const format = formatFor(playlist);
   const objective: Objective = format.objective === 'mixed' ? rng.weighted(OBJECTIVES) : format.objective;
   const n = players.length;
   const slotsOf: Record<TeamId, number[]> = { blue: [], orange: [] };
@@ -220,7 +235,7 @@ export function simulateMatch(
     for (const team of ['blue', 'orange'] as const) {
       const side = sideOf(team);
       const taken = takenOps[side];
-      taken.fill(0);
+      taken.set(unreleased[side]); // an operator not released yet counts as taken
       const slots = pickOrder[team];
       for (let i = slots.length - 1; i > 0; i -= 1) {
         const j = rng.int(0, i);
@@ -235,7 +250,7 @@ export function simulateMatch(
           previous >= 0 && lastSide[s] === side && !taken[previous] && rng.chance(0.4)
             ? previous
             : pickOperator(rng, p.account.person.operatorWeights[side], taken);
-        if (pick < 0) pick = rng.int(0, taken.length - 1);
+        if (pick < 0) pick = Math.max(0, taken.indexOf(0)); // never: every released operator has a weight
         taken[pick] = 1;
         compact.picks[pickBase + s] = pick;
         lastPick[s] = pick;

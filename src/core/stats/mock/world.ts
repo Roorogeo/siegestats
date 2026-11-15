@@ -1,7 +1,7 @@
 import type { MapDef, PlaylistDef, SeasonDef } from '@shared/types/game-config';
 import type { RankChange } from '@shared/types/match';
 import type {
-  IsoDateTime, MatchId, OperatorId, PlatformFamily, PlaylistId, RegionId, SeasonId, Side, TeamId,
+  IsoDateTime, MapId, MatchId, OperatorId, PlatformFamily, PlaylistId, RegionId, SeasonId, Side, TeamId,
 } from '@shared/types/primitives';
 import type { PlayerRef } from '@shared/types/player';
 import type { RankedStanding, SeasonRecord } from '@shared/types/stats';
@@ -36,7 +36,7 @@ export interface OperatorPool {
 export interface MockAccount {
   /** Position in MockWorld.accounts. */
   index: number;
-  key: string; // `${platform}:${id}`
+  key: string; // playerKeyString(ref): `${platform}:${id}`
   ref: PlayerRef;
   family: PlatformFamily;
   person: MockPerson;
@@ -104,6 +104,14 @@ export interface Participation {
   slot: number;
 }
 
+/** One playlist line of a summary-only season, broken down: each part sums to that line's counts. */
+export interface SummaryLine {
+  /** Per map: the line's matches and every other count (matches, wins, kills, rounds, ...). */
+  maps: Map<MapId, Tally>;
+  /** Per side and operator: the line's rounds, rounds won, kills, deaths, assists and headshots. */
+  operators: OperatorTallies;
+}
+
 /** One season of one account, as counts. */
 export interface SeasonAgg {
   seasonId: SeasonId;
@@ -111,14 +119,20 @@ export interface SeasonAgg {
   fromMatches: boolean;
   overall: Tally;
   byPlaylist: Map<PlaylistId, { tally: Tally; standing: RankedStanding | null }>;
-  /** Per side and operator (summary-only seasons: only the best attacker and defender). */
+  /** Per side and operator, over the whole season (summary-only seasons: the sum of their lines' operators). */
   operators: OperatorTallies;
+  /**
+   * Summary-only seasons: the per-map and per-operator breakdown of each playlist line, which listed matches give
+   * the others. Nothing per map and operator together. null for a season built from listed matches, and for a
+   * summary-only season until MockWorld.seasonsOf() has filled it in.
+   */
+  summary: Map<PlaylistId, SummaryLine> | null;
 }
 
 export interface MockWorld {
   seed: number;
   generatedAt: IsoDateTime;
-  /** The season the generator treats as current: the one containing "now", else the nearest end of the config. */
+  /** The season the generator treats as current: GameIndex.currentSeasonAt(now), the app's one rule. */
   currentSeasonId: SeasonId;
   windowStart: IsoDateTime;
   accounts: MockAccount[];
@@ -127,8 +141,13 @@ export interface MockWorld {
   matchById: Map<string, GeneratedMatch>;
   /** Per account, oldest first. */
   participations: Map<string, Participation[]>;
-  /** Per account, per season id. */
+  /**
+   * Per account, per season id: totals and standings. A summary-only season's breakdown (`summary`, and so its
+   * `operators`) is only there once seasonsOf() has run for that account; read it through seasonsOf().
+   */
   seasons: Map<string, Map<SeasonId, SeasonAgg>>;
-  /** Public season records per account, newest first (built once from `seasons`). */
-  seasonRecords: Map<string, SeasonRecord[]>;
+  /** One account's seasons with every breakdown filled in (summary-only seasons: built on first use, then kept). */
+  seasonsOf(accountKey: string): Map<SeasonId, SeasonAgg>;
+  /** Public season records of one account, newest first (built on first use from seasonsOf, then kept). */
+  seasonRecords(accountKey: string): SeasonRecord[];
 }

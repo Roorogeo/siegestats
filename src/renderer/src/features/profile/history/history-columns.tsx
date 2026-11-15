@@ -9,6 +9,7 @@ import { MapBadge, RankBadge } from '../../../components';
 import { cn } from '../../../lib/cn';
 import { DASH, formatDateTime, formatKd, formatNumber, formatRatio, timeAgo } from '../../../lib/format';
 import { Badge, Delta, type Column } from '../../../ui';
+import { pointsUnit } from '../overview/ladder';
 
 const RESULT_LABEL: Readonly<Record<MatchResult, string>> = { win: 'Win', loss: 'Loss', draw: 'Draw' };
 const RESULT_TONE: Readonly<Record<MatchResult, string>> = { win: 'text-positive', loss: 'text-negative', draw: 'text-text-muted' };
@@ -16,10 +17,6 @@ const RESULT_TONE: Readonly<Record<MatchResult, string>> = { win: 'text-positive
 /** A playlist's name from the config, or a plain word for one the config does not know yet. */
 export const playlistName = (game: GameIndex, match: Pick<MatchSummary, 'playlistId'>): string =>
   (match.playlistId === null ? null : game.playlist(match.playlistId)?.name) ?? 'Unknown playlist';
-
-/** What the points of a match are called: RP on the Ranked ladder, plain points elsewhere (Legend Division). */
-const pointsUnit = (game: GameIndex, match: MatchSummary): string =>
-  match.playlistId !== null && game.playlist(match.playlistId)?.points === 'plain' ? 'points' : 'RP';
 
 /** "Win 4-2 on Bank, 2 h ago": names a match in a link's accessible name. */
 export const matchLabel = (game: GameIndex, match: MatchSummary, now: number): string =>
@@ -101,7 +98,7 @@ export function historyColumns(game: GameIndex, player: PlayerKey, now: number):
       cell: (m) => {
         const after = m.rankChange?.after ?? null;
         if (!after) return <span className="text-text-muted">{DASH}</span>;
-        const unit = pointsUnit(game, m);
+        const unit = pointsUnit(game, m.playlistId);
         // Points without a division (Legend Division, Ranked placements) line up with the others, with no badge.
         return (
           <span className="inline-flex items-center gap-1.5">
@@ -118,7 +115,7 @@ export function historyColumns(game: GameIndex, player: PlayerKey, now: number):
       id: 'change',
       header: 'Change',
       numeric: true,
-      cell: (m) => <Delta value={m.rankChange?.delta ?? null} unit={pointsUnit(game, m)} />,
+      cell: (m) => <Delta value={m.rankChange?.delta ?? null} unit={pointsUnit(game, m.playlistId)} />,
     },
     { id: 'kd', header: 'K/D', numeric: true, cell: (m) => formatKd(kd(m.kills, m.deaths)) },
     {

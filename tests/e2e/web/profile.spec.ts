@@ -1,14 +1,18 @@
 import type { Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import type { SeasonDef } from '../../../src/shared/types/game-config';
 import { expect, test } from './serve';
 
 /**
  * Player profile and My Profile on the mock data. The accounts below come from the seeded mock world: they depend
- * only on MOCK_SEED and the game config, never on the clock (their stats do move with it: serve.ts pins every page to TEST_NOW), so they are the same on every run.
+ * only on MOCK_SEED and the game config, never on the clock, so they exist on every run. Their stats do move with
+ * the clock, which serve.ts pins to TEST_NOW for every page.
  *   LuhalAlt (PC): a full ranked season; the source links one PlayStation account, nothing on Xbox.
  */
 const PLAYER = { platform: 'pc', id: '17c92055-6505-482b-922b-f80b5a5c03a1', name: 'LuhalAlt' } as const;
 const LINKED = { platform: 'psn', id: 'bdd96aff-fd72-4267-8ab6-69cd3addfe20' } as const;
 const profileRoute = (p: { platform: string; id: string }, search = ''): string => `/player/${p.platform}/${p.id}${search}`;
+const seasons = (JSON.parse(readFileSync('config/game/seasons.json', 'utf8')) as { seasons: SeasonDef[] }).seasons;
 
 /** Opens the app on a fresh page and collects every console error and uncaught exception. */
 async function open(page: Page, appUrl: string, route: string): Promise<string[]> {
@@ -123,6 +127,22 @@ test('Pin as mine makes My Profile show the player and lists it in the account s
   expect(errors).toEqual([]);
 });
 
+test('picking my account in the onboarding search pins it and moves focus to the profile heading', async ({ page, appUrl }) => {
+  const errors = await open(page, appUrl, '/profile');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('My Profile');
+  const box = page.getByRole('combobox', { name: 'Find your account' });
+  await box.fill(PLAYER.name);
+  const option = page.getByRole('option', { name: new RegExp(`^${PLAYER.name}, `) }).first();
+  await expect(option).toBeVisible({ timeout: 15_000 });
+  await box.press('ArrowDown');
+  await box.press('Enter');
+  // The search box is gone and the route stays /profile: focus lands on the profile's h1, not on the page.
+  await loaded(page);
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  await expect(page.getByText('Your account', { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('the favourite star toggles and stays set for the session', async ({ page, appUrl }) => {
   const errors = await open(page, appUrl, profileRoute(PLAYER));
   await loaded(page);
@@ -172,8 +192,17 @@ test('the platform switch opens a linked account and offers a search on an unlin
   await expect(platforms.locator('[aria-current="page"]')).toHaveText('PC');
   await expect(page.getByText('1 linked account')).toBeVisible();
 
-  // An unlinked platform is focusable, explains itself and offers an ordinary search for the same name.
+  // An unlinked platform is focusable, explains itself and offers an ordinary search for the same name. Its label is
+  // plain muted text, never dimmed below it (an active control keeps 4.5:1): nothing on the way to it is translucent.
   const xbox = platforms.getByRole('button', { name: 'Xbox, no linked account' });
+  const opacities = await xbox.evaluate((button) => {
+    const out: string[] = [];
+    for (let node: Element | null = button; node && node.getAttribute('role') !== 'group'; node = node.parentElement) out.push(getComputedStyle(node).opacity);
+    return out;
+  });
+  expect(opacities.every((opacity) => opacity === '1')).toBe(true);
+  await xbox.hover();
+  expect(await xbox.evaluate((button) => getComputedStyle(button).opacity)).toBe('1');
   await xbox.click();
   const panel = page.getByRole('dialog', { name: 'Xbox: no linked account' });
   await expect(panel).toContainText(`The stats source links no Xbox account to ${PLAYER.name}`);
@@ -244,5 +273,48 @@ test('the ranked sessions chart expands into a modal dialog that Escape closes, 
   await page.getByRole('dialog', { name: 'Ranked sessions' }).getByRole('button', { name: 'Close' }).click();
   await expect(page.getByRole('dialog', { name: 'Ranked sessions' })).toBeHidden();
   await expect(expand).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
+test('one current season everywhere: after a new season starts, every card, filter and badge names it', async ({ page, appUrl }) => {
+  // Two days into Y11S4. The config's currentSeasonId may still name the season before: the clock decides.
+  const at = '2026-12-03T12:00:00.000Z';
+  const season = seasons.find((s) => s.startsAt <= at && (s.endsAt === null || at < s.endsAt));
+  expect(season?.id).toBe('Y11S4');
+  const { id, name, startsAt } = season as SeasonDef;
+  await page.clock.setSystemTime(new Date(at));
+  const errors = await open(page, appUrl, profileRoute(PLAYER, '?hperiod=season'));
+  await loaded(page);
+
+  // Overview: the current season card, the ranked sessions chart and the peak ranks' "Current season" row.
+  const current = page.getByRole('region', { name: 'Current season' });
+  const subtitle = current.getByText(new RegExp(`^${name} · \\d+ match(es)? · `));
+  await expect(subtitle).toBeVisible({ timeout: 15_000 });
+  const seasonMatches = Number(/· (\d+) match/.exec(await subtitle.innerText())?.[1]);
+  await expect(page.getByRole('region', { name: 'Ranked sessions' })).toContainText(`RP after every Ranked match · ${name} · `, { timeout: 15_000 });
+  const peaks = page.getByRole('region', { name: 'Peak ranks' });
+  await expect(peaks.getByText(`${id} · Current season`)).toBeVisible();
+  await expect(peaks.getByText(/Current season/)).toHaveCount(1);
+
+  // Match history, "Season": the same matches as the card, all on or after the season's start.
+  await expect(page.getByRole('radiogroup', { name: 'Period' }).getByRole('radio', { name: 'Season' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByText(/^Showing \d+ of \d+ match(es)?$/)).toHaveText(new RegExp(`of ${seasonMatches} match(es)?$`), { timeout: 15_000 });
+  const dates = await page.getByRole('table', { name: 'Match history' }).locator('tbody time').evaluateAll((times) => times.map((t) => t.getAttribute('datetime') ?? ''));
+  expect(dates.length).toBeGreaterThan(0);
+  expect(dates.every((date) => date >= startsAt)).toBe(true);
+
+  // Seasons tab: the "Current" badge sits on that season's row.
+  await tabs(page).getByRole('tab', { name: 'Seasons' }).click();
+  const currentRow = page.getByRole('table', { name: 'Seasons' }).locator('tbody tr').filter({ hasText: 'Current' });
+  await expect(currentRow).toHaveCount(1, { timeout: 15_000 });
+  await expect(currentRow).toContainText(name);
+
+  // Operators: the season filter starts on it, and keeps the URL clean.
+  await tabs(page).getByRole('tab', { name: 'Operators' }).click();
+  await expect(page.getByRole('tabpanel', { name: 'Operators' })).toBeVisible();
+  const select = page.getByRole('combobox', { name: 'Season', exact: true });
+  await expect(select).toHaveValue(id);
+  await expect(select.locator('option:checked')).toHaveText(`${name} (${id})`);
+  expect(new URL(page.url()).hash).not.toContain('oseason');
   expect(errors).toEqual([]);
 });

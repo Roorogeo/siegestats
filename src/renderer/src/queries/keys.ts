@@ -2,6 +2,10 @@ import type { MatchHistoryQuery } from '@shared/types/match';
 import type { Platform } from '@shared/types/primitives';
 import type { PlayerKey } from '@shared/types/player';
 import type { StatsCalls, StatsMethod } from '@shared/types/provider';
+import { samePlayer } from '@shared/util/player';
+
+/** Kept here too, so existing `queries` imports of samePlayer keep working. */
+export { samePlayer };
 
 /**
  * TanStack query keys, built from the request objects the bridge receives, so two components asking the same
@@ -55,8 +59,6 @@ export function playerOfQueryKey(key: readonly unknown[]): PlayerKey | null {
   if (KEY_IN_FIELD.has(key[1])) return isObject(request) ? asPlayerKey(request.player) : null;
   return null;
 }
-
-export const samePlayer = (a: PlayerKey, b: PlayerKey): boolean => a.platform === b.platform && a.id === b.id;
 
 /** True for a key of one of `player`'s per-player queries. */
 export function isQueryOfPlayer(key: readonly unknown[], player: PlayerKey): boolean {

@@ -1,4 +1,5 @@
-import type { PlayerKey, PlayerRef, PlayerSearchResult } from '@shared/types/player';
+import type { PlayerKey, PlayerSearchResult } from '@shared/types/player';
+import { playerKeyString } from '@shared/util/player';
 
 /** How many results one search asks for. A full page shows a hint to type more of the name. */
 export const SEARCH_LIMIT = 8;
@@ -9,16 +10,6 @@ export const MAX_FAVORITES_SHOWN = 8;
 
 /** The groups the empty box can list, in the order of design question 19. */
 export type SuggestionKind = 'mine' | 'favorites' | 'recent';
-
-/** Only the PlayerRef fields: what opening, pinning and "recent" receive, never the extra search-result fields. */
-export const toPlayerRef = (player: PlayerRef): PlayerRef => ({
-  platform: player.platform,
-  id: player.id,
-  name: player.name,
-  avatarUrl: player.avatarUrl,
-});
-
-export const playerKeyOf = (player: PlayerKey): string => `${player.platform}:${player.id}`;
 
 /** Exact matches first; otherwise the source's own order is kept (a stable sort). */
 export function orderResults(results: readonly PlayerSearchResult[]): PlayerSearchResult[] {
@@ -56,7 +47,7 @@ export function withoutRepeats<T extends { player: PlayerKey }>(lists: readonly 
   const seen = new Set<string>();
   return lists.map((list) =>
     list.filter((item) => {
-      const key = playerKeyOf(item.player);
+      const key = playerKeyString(item.player);
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

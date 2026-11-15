@@ -26,7 +26,9 @@ export function MatchNotFound({ pov, invalid = false }: MatchNotFoundProps) {
         <div className="flex size-11 items-center justify-center rounded-full bg-surface-2 text-text-muted">
           <SearchX className="size-5" aria-hidden />
         </div>
-        <h1 className="text-lg font-semibold text-text">{invalid ? 'This match link is not valid' : 'Match not found'}</h1>
+        <h1 tabIndex={-1} className="text-lg font-semibold text-text outline-none">
+          {invalid ? 'This match link is not valid' : 'Match not found'}
+        </h1>
         <p className="mx-auto max-w-md text-[13px] text-text-muted">
           {invalid
             ? 'It does not name a match. Open the match again from a match history.'

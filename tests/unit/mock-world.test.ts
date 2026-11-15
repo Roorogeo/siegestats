@@ -26,7 +26,7 @@ function fingerprint(w: MockWorld): string {
     accounts: w.accounts.map((a) => [a.ref, a.linked, a.legendRegionId, a.partyId, a.person.level]),
     matches: w.matches.map((m) => matchDetail(game, m)),
     summaries: [...w.participations.values()].map((list) => list.map(matchSummary)),
-    seasons: [...w.seasonRecords.entries()],
+    seasons: w.accounts.map((a) => [a.key, w.seasonRecords(a.key)]),
   });
 }
 
@@ -56,6 +56,8 @@ const samplePlayers = (n: number): PlayerRef[] => {
 describe('generator determinism', () => {
   test('the same seed and the same clock give a byte-identical world; another seed a different one', () => {
     const again = generateWorld({ seed: MOCK_SEED, now: NOW, game });
+    // Summary seasons are broken down on first use: asking for the accounts in another order changes nothing.
+    for (const a of [...again.accounts].reverse()) again.seasonRecords(a.key);
     expect(fingerprint(again)).toBe(fingerprint(world));
     const other = generateWorld({ seed: MOCK_SEED + 1, now: NOW, game });
     expect(fingerprint(other)).not.toBe(fingerprint(world));
@@ -78,13 +80,48 @@ describe('generator determinism', () => {
     expect(reads).toBe(1);
   });
 
-  test('a clock outside the config still gets a world: the open last season, else the first', () => {
+  test('a clock outside the config still gets a world: the open last season, else the config fallback', () => {
     const future = generateWorld({ seed: 1, now: '2031-06-01T00:00:00.000Z' as IsoDateTime, game });
     expect(future.currentSeasonId).toBe('Y11S4');
     expect(new Set(future.matches.map((m) => m.season.id))).toEqual(new Set(['Y11S4']));
-    const past = generateWorld({ seed: 1, now: '2019-06-01T00:00:00.000Z' as IsoDateTime, game });
-    expect(past.currentSeasonId).toBe('Y7S4');
+    // Before every season: GameIndex.currentSeasonAt falls back to the config's currentSeasonId, and so do the matches.
+    const before = '2019-06-01T00:00:00.000Z' as IsoDateTime;
+    const past = generateWorld({ seed: 1, now: before, game });
+    expect(past.currentSeasonId).toBe(game.currentSeasonAt(before).id);
+    expect(past.currentSeasonId).toBe(game.currentSeason().id);
+    expect(new Set(past.matches.map((m) => m.season.id))).toEqual(new Set([past.currentSeasonId]));
     expect(past.matches.length).toBeGreaterThan(2500);
+  });
+
+  test('the current season follows the clock across a season start, by GameIndex.currentSeasonAt', async () => {
+    for (const [now, expected] of [
+      ['2026-11-30T23:59:00.000Z', 'Y11S3'],
+      ['2026-12-01T00:00:00.000Z', 'Y11S4'],
+    ] as const) {
+      const at = now as IsoDateTime;
+      const w = generateWorld({ seed: MOCK_SEED, now: at, game });
+      expect(w.currentSeasonId).toBe(expected);
+      expect(w.currentSeasonId).toBe(game.currentSeasonAt(at).id);
+      // Every match belongs to the season its date falls in, so none is newer than the current season.
+      for (const m of w.matches) expect(m.season.id).toBe(game.currentSeasonAt(m.startedAt).id);
+      const p = createMockProvider({ game, clock: createManualClock(at), seed: MOCK_SEED });
+      const luhal = await p.getProfile({ platform: 'pc', id: '17c92055-6505-482b-922b-f80b5a5c03a1' as never });
+      expect(luhal.currentSeason.seasonId).toBe(expected);
+    }
+  });
+
+  test('the demo accounts the e2e tests and docs name keep their ids, names and links', () => {
+    const named = (key: string) => {
+      const a = world.accountByKey.get(key);
+      return a ? { name: a.ref.name, linked: a.linked } : null;
+    };
+    expect(named('pc:17c92055-6505-482b-922b-f80b5a5c03a1')).toEqual({ name: 'LuhalAlt', linked: ['psn:bdd96aff-fd72-4267-8ab6-69cd3addfe20'] });
+    expect(named('psn:bdd96aff-fd72-4267-8ab6-69cd3addfe20')?.linked).toEqual(['pc:17c92055-6505-482b-922b-f80b5a5c03a1']);
+    expect(named('pc:3e7b27a1-3c75-4430-b770-2aed61b8a03b')).toEqual({ name: 'Zalvok', linked: ['psn:76e23ef1-9ca0-4fb6-bdc0-2efd253e0360'] });
+    expect(named('psn:23d397de-821a-4d1c-9c72-39b1826d2a87')).toMatchObject({ name: 'TinyFerret', linked: [] });
+    expect(named('xbl:d9fadf8d-d614-4d1b-a57f-b0facec05e39')?.name).toBe('GaryorJr');
+    expect(named('xbl:d9fadf8d-d614-4d1b-a57f-b0facec05e39')?.linked).toHaveLength(1);
+    expect(named('xbl:d9fadf8d-d614-4d1b-a57f-b0facec05e39')?.linked[0]).toMatch(/^pc:/);
   });
 });
 
@@ -358,6 +395,112 @@ describe('every number adds up', () => {
       }
       const values = board.entries.map((e) => e.value);
       expect([...values].sort((a, b) => b - a)).toEqual(values);
+    }
+  });
+});
+
+describe('the game config shapes the demo matches', () => {
+  /** Rounds played after the score reached the config's tie (overtime or deciding round), as the match screen counts them. */
+  const extraRounds = (d: MatchDetail): number => {
+    const playlist = game.playlist(d.playlistId ?? '');
+    const at = playlist?.overtime?.at ?? playlist?.decidingRoundAt ?? null;
+    if (at === null) return 0;
+    let blue = 0;
+    let orange = 0;
+    let extra = 0;
+    let tied = false;
+    for (const round of d.rounds ?? []) {
+      if (tied) extra += 1;
+      if (round.winner === 'blue') blue += 1;
+      else orange += 1;
+      if (blue === at && orange === at) tied = true;
+    }
+    return extra;
+  };
+
+  test('a round is extra exactly when the config says so: Ranked 5-3 / 5-4 have 2 / 3 overtime rounds, Standard 4-3 one decider', () => {
+    const seen = new Set<string>();
+    for (const m of world.matches) {
+      const d = matchDetail(game, m);
+      const [a, b] = [Math.max(m.score.blue, m.score.orange), Math.min(m.score.blue, m.score.orange)];
+      const score = `${a}-${b}`;
+      const extra = extraRounds(d);
+      const { overtime, decidingRoundAt } = m.playlist;
+      if (overtime) {
+        // First to at + 1 in regulation; from at-at, first to roundsToWin.
+        const expected = b >= overtime.at ? a + b - 2 * overtime.at : 0;
+        expect(extra, `${m.playlist.id} ${score}`).toBe(expected);
+        expect(a).toBe(b >= overtime.at ? overtime.roundsToWin : overtime.at + 1);
+      } else if (decidingRoundAt !== null) {
+        expect(extra, `${m.playlist.id} ${score}`).toBe(b === decidingRoundAt ? 1 : 0);
+        expect(a).toBe(decidingRoundAt + 1);
+      } else {
+        expect(extra).toBe(0);
+      }
+      if (extra > 0) seen.add(`${m.playlist.kind} ${score} ${extra}`);
+    }
+    expect([...seen].sort()).toEqual(['legend 5-3 2', 'legend 5-4 3', 'ranked 5-3 2', 'ranked 5-4 3', 'standard 4-3 1']);
+  });
+
+  test('no operator is picked in a season before its release', () => {
+    let checked = 0;
+    for (const m of world.matches) {
+      const released = (id: string | null): boolean => {
+        const op = id ? game.operator(id) : null;
+        return op !== null && game.releasedIn(op, m.season.id);
+      };
+      for (const round of matchDetail(game, m).rounds ?? []) {
+        for (const pick of round.picks) expect(released(pick.operatorId), `${pick.operatorId} in ${m.season.id}`).toBe(true);
+      }
+      for (const s of m.slots) for (const op of s.operators) expect(released(op.operatorId), `${op.operatorId} in ${m.season.id}`).toBe(true);
+      checked += 1;
+    }
+    expect(checked).toBe(world.matches.length);
+    // Summary-only seasons and every season's best attacker and defender, for every account.
+    for (const a of world.accounts) {
+      for (const agg of world.seasonsOf(a.key).values()) {
+        for (const side of ['attack', 'defense'] as const) {
+          for (const id of agg.operators[side].keys()) {
+            const op = game.operator(id);
+            expect(op && game.releasedIn(op, agg.seasonId), `${id} in ${agg.seasonId}`).toBe(true);
+          }
+        }
+      }
+      for (const record of world.seasonRecords(a.key)) {
+        for (const best of [record.bestAttacker, record.bestDefender]) {
+          const op = best ? game.operator(best.operatorId) : null;
+          if (best) expect(op && game.releasedIn(op, record.seasonId), `${best.operatorId} best in ${record.seasonId}`).toBe(true);
+        }
+      }
+    }
+    // The window holds Y11S2 matches, before Noor (Y11S3): the rule is exercised, not vacuous.
+    expect(game.operator('noor')?.firstSeasonId).toBe('Y11S3');
+    expect(world.matches.some((m) => m.season.id === 'Y11S2')).toBe(true);
+    expect(world.matches.some((m) => m.season.id === 'Y11S3' && m.slots.some((s) => s.operators.some((o) => o.operatorId === 'noor')))).toBe(true);
+  });
+
+  test('maps: Ranked and Legend Division never on arena or casual-only maps, and no map before its release', () => {
+    const banned = ['close-quarter', 'stadium-alpha', 'stadium-bravo', 'favela', 'house', 'tower', 'yacht', 'presidential-plane', 'hereford-base'];
+    for (const m of world.matches) {
+      expect(game.releasedIn(m.map, m.season.id), `${m.map.id} in ${m.season.id}`).toBe(true);
+      expect(m.map.playlistKinds === null || m.map.playlistKinds.includes(m.playlist.kind), `${m.map.id} in ${m.playlist.id}`).toBe(true);
+      if (m.playlist.kind === 'ranked' || m.playlist.kind === 'legend') expect(banned).not.toContain(m.map.id);
+    }
+    // Arcade still gets the arena maps, and Ranked a spread of competitive maps.
+    expect(world.matches.some((m) => m.playlist.kind === 'arcade' && m.map.id.startsWith('stadium-'))).toBe(true);
+    expect(new Set(world.matches.filter((m) => m.playlist.kind === 'ranked').map((m) => m.map.id)).size).toBeGreaterThanOrEqual(15);
+    // Summary-only seasons follow the same rules.
+    for (const a of world.accounts.slice(0, 80)) {
+      for (const agg of world.seasonsOf(a.key).values()) {
+        for (const [playlistId, line] of agg.summary ?? []) {
+          const kind = game.playlist(playlistId)?.kind;
+          for (const mapId of line.maps.keys()) {
+            const map = game.map(mapId);
+            expect(map && game.releasedIn(map, agg.seasonId), `${mapId} in ${agg.seasonId}`).toBe(true);
+            if (kind === 'ranked') expect(banned).not.toContain(mapId);
+          }
+        }
+      }
     }
   });
 });

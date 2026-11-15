@@ -1,10 +1,10 @@
 import { PinOff, Search, UserX } from 'lucide-react';
 import type { PlayerKey } from '@shared/types/player';
 import { useSettings } from '../../app/SettingsProvider';
-import { PLATFORM_LABEL } from '../../shell/platforms';
+import { PLATFORM_LABEL } from '../../components';
 import { Button, Card } from '../../ui';
 import { openGlobalSearch } from '../search/open-search';
-import { usePinnedAccounts } from './pinning';
+import { usePinnedAccounts } from './usePinnedAccounts';
 
 interface ProfileNotFoundProps {
   /** null = the link itself is malformed (no platform and id in it). */
@@ -30,7 +30,9 @@ export function ProfileNotFound({ player }: ProfileNotFoundProps) {
         <div className="flex size-11 items-center justify-center rounded-full bg-surface-2 text-text-muted">
           <UserX className="size-5" aria-hidden />
         </div>
-        <h1 className="text-lg font-semibold text-text">{title}</h1>
+        <h1 tabIndex={-1} className="text-lg font-semibold text-text outline-none">
+          {title}
+        </h1>
         <p className="mx-auto max-w-md text-[13px] text-text-muted">{description}</p>
         <div className="mt-1 flex flex-wrap justify-center gap-2">
           <Button icon={<Search className="size-3.5" aria-hidden />} onClick={() => openGlobalSearch({ name: '', platform })}>

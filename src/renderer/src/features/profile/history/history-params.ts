@@ -1,6 +1,6 @@
 import type { GameIndex } from '@shared/game-config';
 import type { MatchPeriod } from '@shared/types/match';
-import type { PlaylistId } from '@shared/types/primitives';
+import type { PlaylistId, SeasonId } from '@shared/types/primitives';
 
 /**
  * The match history's filters as URL search params, so back / forward restore them. Every name starts with "h" so it
@@ -53,10 +53,15 @@ export function writeHistoryParams(
   return out;
 }
 
-/** The provider's period for a choice. "Season" is the current season of the game config. */
-export function toMatchPeriod(choice: PeriodChoice, game: GameIndex): MatchPeriod {
-  if (choice === 'season') return { kind: 'season', seasonId: game.currentSeason().id };
-  return { kind: 'days', days: choice === '7' ? 7 : choice === '30' ? 30 : 90 };
+const DAYS: Readonly<Record<Exclude<PeriodChoice, 'season'>, 7 | 30 | 90>> = { '7': 7, '30': 30, '90': 90 };
+
+/** Days back of a days choice; null for "Season". */
+export const periodDays = (choice: PeriodChoice): 7 | 30 | 90 | null => (choice === 'season' ? null : DAYS[choice]);
+
+/** The provider's period for a choice. "Season" is the season in force (useCurrentSeason()), passed in as its id. */
+export function toMatchPeriod(choice: PeriodChoice, currentSeasonId: SeasonId): MatchPeriod {
+  const days = periodDays(choice);
+  return days === null ? { kind: 'season', seasonId: currentSeasonId } : { kind: 'days', days };
 }
 
 /** "in the last 7 days" / "this season": the end of an empty-state sentence. */

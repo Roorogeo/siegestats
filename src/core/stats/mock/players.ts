@@ -1,5 +1,6 @@
 import type { GameIndex } from '@shared/game-config';
 import type { OperatorId, Platform, PlatformFamily, PlayerId, RegionId, Side } from '@shared/types/primitives';
+import { playerKeyString } from '@shared/util/player';
 import type { Random } from '@shared/util/random';
 import { candidateHandle, isDeniedHandle, variantHandle } from './names';
 import type { MockAccount, MockPerson, OperatorPool } from './world';
@@ -19,15 +20,25 @@ function uuid(rng: Random): PlayerId {
   return `${hex(8)}-${hex(4)}-4${hex(3)}-${rng.pick(['8', '9', 'a', 'b'])}${hex(3)}-${hex(12)}` as PlayerId;
 }
 
+/** Pick weights of a person's favourites on one side, most played first. Everyone else on that side gets TAIL_WEIGHT. */
+const FAVOURITE_WEIGHTS = [14, 8, 5, 3.5, 2.5, 1.8, 1.2];
+/** About 3% of a side's picks in all: a season's operator list has a clear head and a long, thin tail. */
+const TAIL_WEIGHT = 0.04;
+
+/**
+ * Release seasons are not applied here: a pool covers every operator of the side, and the simulator and the
+ * season summaries give an operator weight 0 in a season before its firstSeasonId.
+ */
 function operatorWeights(rng: Random, game: GameIndex, side: Side): OperatorPool {
   const ids: OperatorId[] = game.operatorsBySide(side).map((o) => o.id);
-  const favourites = rng.shuffle(ids).slice(0, 5);
-  const boost = [12, 7, 5, 3.5, 2.5];
+  // One shuffle of the whole side, whatever the number of favourites: the draws that follow (and so every account
+  // id) do not depend on it.
+  const favourites = rng.shuffle(ids).slice(0, FAVOURITE_WEIGHTS.length);
   return {
     ids,
     weights: ids.map((id) => {
       const at = favourites.indexOf(id);
-      return at >= 0 ? (boost[at] ?? 1) : 0.35;
+      return at >= 0 ? (FAVOURITE_WEIGHTS[at] ?? 1) : TAIL_WEIGHT;
     }),
   };
 }
@@ -83,7 +94,7 @@ export function generateAccounts(rng: Random, game: GameIndex): MockAccount[] {
     const id = uuid(rng);
     const account: MockAccount = {
       index: accounts.length,
-      key: `${platform}:${id}`,
+      key: playerKeyString({ platform, id }),
       ref: { platform, id, name, avatarUrl: null },
       family: familyOf(platform),
       person: p,

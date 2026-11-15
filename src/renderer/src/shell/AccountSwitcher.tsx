@@ -2,12 +2,13 @@ import { Check, ChevronDown, Settings2, UserRound } from 'lucide-react';
 import { Link } from 'react-router';
 import type { PlayerKey, PlayerRef } from '@shared/types/player';
 import type { AccountSettings } from '@shared/types/settings';
+import { playerKeyString } from '@shared/util/player';
 import { useAppInfo } from '../app/AppInfoProvider';
 import { settingsPath } from '../app/routes';
 import { useSettings } from '../app/SettingsProvider';
+import { PLATFORM_LABEL } from '../components';
 import { cn } from '../lib/cn';
 import { EmptyState } from '../ui';
-import { PLATFORM_LABEL } from './platforms';
 import { Popover } from './Popover';
 
 const sameKey = (a: PlayerKey, b: PlayerKey | null): boolean => b !== null && a.platform === b.platform && a.id === b.id;
@@ -27,7 +28,7 @@ function Initials({ player, className }: { player: PlayerRef; className?: string
 
 /**
  * The accounts pinned as "mine" for the running data source, and which one Home and My Profile show.
- * Pinning itself arrives with profiles in phase 2; until then the list is empty.
+ * An account is pinned from its profile (or from My Profile's first-run search); until then the list is empty.
  */
 export function AccountSwitcher() {
   const { settings, update } = useSettings();
@@ -72,14 +73,14 @@ export function AccountSwitcher() {
               className="px-4 py-6"
               icon={<UserRound className="size-5" aria-hidden />}
               title="No accounts yet"
-              description="Pin an account as yours from its profile. Pinning arrives in phase 2."
+              description="Pin an account as yours from its profile."
             />
           ) : (
             <ul className="flex flex-col gap-0.5 p-1.5" aria-label="Pinned accounts">
               {accounts.pinned.map(({ player }) => {
                 const isActive = sameKey(player, accounts.active);
                 return (
-                  <li key={`${player.platform}:${player.id}`}>
+                  <li key={playerKeyString(player)}>
                     <button
                       type="button"
                       aria-current={isActive ? 'true' : undefined}

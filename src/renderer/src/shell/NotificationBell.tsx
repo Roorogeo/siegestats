@@ -4,9 +4,10 @@ import { useEffect, useState, type ReactNode } from 'react';
 import type { AppNotification } from '@shared/types/notifications';
 import type { Favorite } from '@shared/types/storage';
 import { toAppError } from '@shared/util/errors';
+import { playerKeyString } from '@shared/util/player';
 import { bridge } from '../bridge';
+import { PLATFORM_LABEL } from '../components';
 import { EmptyState, ErrorState, IconButton, Loading, Skeleton, Tabs, tabPanelProps, type TabItem } from '../ui';
-import { PLATFORM_LABEL } from './platforms';
 import { Popover } from './Popover';
 
 type PanelTab = 'notifications' | 'favorites';
@@ -142,7 +143,7 @@ export function NotificationBell() {
             >
               {(items) =>
                 items.map(({ player }) => (
-                  <li key={`${player.platform}:${player.id}`} className="flex items-center justify-between gap-3 rounded-control px-2 py-1.5">
+                  <li key={playerKeyString(player)} className="flex items-center justify-between gap-3 rounded-control px-2 py-1.5">
                     <span className="truncate text-[13px]">{player.name}</span>
                     <span className="shrink-0 text-xs text-text-muted">{PLATFORM_LABEL[player.platform]}</span>
                   </li>

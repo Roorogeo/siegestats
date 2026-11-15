@@ -8,14 +8,14 @@ import { RankedSessionsCard } from './RankedSessionsCard';
 /** The profile's first tab: current season and peak ranks side by side, the ranked sessions chart, match history. */
 export function OverviewTab({ player }: { player: PlayerKey }) {
   const profile = useProfile(player);
-  const seasonId = profile.data?.data.currentSeason.seasonId ?? null;
+  const profileFailed = profile.data === undefined && profile.status === 'error' && !profile.isFetching;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-4">
         <CurrentSeasonCard profile={profile} />
-        <PeakRanksCard player={player} currentSeasonId={seasonId} />
+        <PeakRanksCard player={player} />
       </div>
-      <RankedSessionsCard player={player} seasonId={seasonId} profileFailed={profile.status === 'error'} />
+      <RankedSessionsCard player={player} profileFailed={profileFailed} />
       <MatchHistory player={player} />
     </div>
   );

@@ -9,13 +9,15 @@ import type { PlayerStatsQuery, ProviderCapabilities, StatsProvider } from '@sha
 import type { MapStats, OperatorStats, SeasonRecord } from '@shared/types/stats';
 import { appError } from '@shared/util/errors';
 import { jsonCopy } from '@shared/util/json';
+import { playerKeyString } from '@shared/util/player';
 import { DAY_MS, MINUTE_MS, toIso, toMs } from '@shared/util/time';
 import type { Clock } from '../../ports';
+import { mergeOperatorTallies } from './breakdown';
 import { emptySeasonRecord, generateWorld, matchDetail, matchSummary, mergeOperators } from './generate-world';
 import { buildBoard, pageOf, type Board } from './leaderboards';
 import { rankDistribution } from './rank-distribution';
 import { addTally, emptyTally, toMatchStats, toOperatorStats, type OperatorTally, type Tally } from './tally';
-import type { MockAccount, MockWorld, OperatorTallies, Participation } from './world';
+import type { MockAccount, MockWorld, OperatorTallies, Participation, SummaryLine } from './world';
 
 /** The seed of the demo world. Fixed, so the demo data (players, ids) is the same on every launch (design question 21). */
 export const MOCK_SEED = 20261115;
@@ -71,7 +73,7 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
     if (!k || typeof k !== 'object' || !PLATFORMS.includes(k.platform as Platform) || typeof k.id !== 'string') {
       throw notFound('That player');
     }
-    const found = world().accountByKey.get(`${k.platform}:${k.id}`);
+    const found = world().accountByKey.get(playerKeyString(k as PlayerKey));
     if (!found) throw notFound('That player');
     return found;
   };
@@ -95,6 +97,20 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
 
   const participations = (a: MockAccount): Participation[] => world().participations.get(a.key) ?? [];
   const lastPlayedAt = (a: MockAccount): IsoDateTime | null => participations(a).at(-1)?.match.startedAt ?? null;
+
+  /**
+   * The playlist lines of the account's summary-only seasons (no listed matches) that pass the season and playlist
+   * filters: with them, 'All seasons' and an older season cover every match the account's records count.
+   */
+  const summaryLines = (a: MockAccount, q: Omit<PlayerStatsQuery, 'player'>): SummaryLine[] => {
+    const aggs = world().seasonsOf(a.key);
+    const seasons = q.seasonId === 'all' ? [...aggs.values()] : [aggs.get(q.seasonId)];
+    const lines: SummaryLine[] = [];
+    for (const agg of seasons) {
+      for (const [playlistId, line] of agg?.summary ?? []) if (q.playlistId === 'all' || q.playlistId === playlistId) lines.push(line);
+    }
+    return lines;
+  };
 
   /** The account's matches that pass the filter bar, oldest first. */
   const filtered = (a: MockAccount, q: Omit<PlayerStatsQuery, 'player'>): Participation[] =>
@@ -139,7 +155,7 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
     async getProfile(key) {
       const a = account(key);
       const w = world();
-      const records = w.seasonRecords.get(a.key) ?? [];
+      const records = w.seasonRecords(a.key);
       const lifetime = emptyTally();
       for (const agg of w.seasons.get(a.key)?.values() ?? []) addTally(lifetime, agg.overall);
       const profile: PlayerProfile = {
@@ -158,22 +174,16 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
 
     async getSeasons(key) {
       const a = account(key);
-      return jsonCopy<SeasonRecord[]>(world().seasonRecords.get(a.key) ?? []);
+      return jsonCopy<SeasonRecord[]>(world().seasonRecords(a.key));
     },
 
     async getOperators(query) {
       const a = account(query?.player);
       const q = query;
       const tallies: OperatorTallies = { attack: new Map(), defense: new Map() };
-      const agg = q.seasonId === 'all' ? null : world().seasons.get(a.key)?.get(q.seasonId);
-      if (agg && !agg.fromMatches) {
-        // A summary-only season knows its best attacker and defender, nothing per playlist or map.
-        if (q.playlistId === 'all' && q.mapId === 'all') {
-          for (const side of ['attack', 'defense'] as const) for (const [id, t] of agg.operators[side]) tallies[side].set(id, { ...t });
-        }
-      } else {
-        for (const p of filtered(a, q)) mergeOperators(tallies, p.match.slots[p.slot]?.operators ?? []);
-      }
+      for (const p of filtered(a, q)) mergeOperators(tallies, p.match.slots[p.slot]?.operators ?? []);
+      // Summary-only seasons add their breakdown per playlist; they have none per map and operator together.
+      if (q.mapId === 'all') for (const line of summaryLines(a, q)) mergeOperatorTallies(tallies, line.operators);
       // OperatorStats has no side: an operator playable on both sides is one row.
       const byId = new Map<string, OperatorTally>();
       for (const side of ['attack', 'defense'] as const) {
@@ -196,6 +206,11 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
         const t = p.match.slots[p.slot]?.tally;
         if (!t) continue;
         byMap.set(p.match.map.id, addTally(byMap.get(p.match.map.id) ?? emptyTally(), t));
+      }
+      for (const line of summaryLines(a, query)) {
+        for (const [mapId, t] of line.maps) {
+          if (query.mapId === 'all' || mapId === query.mapId) byMap.set(mapId, addTally(byMap.get(mapId) ?? emptyTally(), t));
+        }
       }
       const rows = [...byMap.entries()]
         .map(([mapId, t]): MapStats => ({ ...toMatchStats(t), mapId }))

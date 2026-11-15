@@ -46,7 +46,7 @@ export function ChartFrame({ label, height, children, table, busy = false, class
           size="sm"
           className="self-end"
           aria-controls={bodyId}
-          aria-pressed={asTable}
+          // The label says what a press does next, so no aria-pressed: "Show chart, pressed" would contradict it.
           onClick={() => setAsTable((on) => !on)}
           icon={asTable ? <BarChart3 className="size-3.5" aria-hidden /> : <Table2 className="size-3.5" aria-hidden />}
         >

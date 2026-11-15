@@ -1,6 +1,7 @@
 import type { IsoDateTime, Platform, PlayerId } from '@shared/types/primitives';
 import type { AccountSettings, AppSettings, Hotkey, HotkeyAction, PinnedAccount } from '@shared/types/settings';
 import { defaultThemeSettings, normalizeThemeSettings } from '@shared/theme';
+import { playerKeyString } from '@shared/util/player';
 
 const key = (code: string, mods: Partial<Pick<Hotkey, 'ctrl' | 'alt' | 'shift'>> = {}): Hotkey => ({
   code,
@@ -60,7 +61,7 @@ function accounts(v: unknown): AccountSettings {
   for (const entry of v.pinned) {
     if (!isRecord(entry) || typeof entry.pinnedAt !== 'string' || Number.isNaN(Date.parse(entry.pinnedAt))) continue;
     const player = sanitizePlayerRef(entry.player);
-    const key = player && `${player.platform}:${player.id}`;
+    const key = player && playerKeyString(player);
     if (!player || !key || seen.has(key)) continue;
     seen.add(key);
     pinned.push({ player, pinnedAt: entry.pinnedAt as IsoDateTime });

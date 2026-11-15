@@ -1,5 +1,4 @@
 import type { Platform } from '@shared/types/primitives';
 
+/** The platforms in their fixed order. Their names are PLATFORM_LABEL, in components/PlatformLabel. */
 export const PLATFORMS: readonly Platform[] = ['pc', 'psn', 'xbl'];
-
-export const PLATFORM_LABEL: Readonly<Record<Platform, string>> = { pc: 'PC', psn: 'PlayStation', xbl: 'Xbox' };

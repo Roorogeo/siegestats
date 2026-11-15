@@ -93,7 +93,8 @@ export function ChipGroup<T extends string>({ options, value, onChange, label, a
         >
           {item.pressed && <Check className="-ml-1 size-3.5 shrink-0" strokeWidth={2.5} aria-hidden />}
           {item.label}
-          {item.count !== undefined && <span className="tabular text-text-muted">{item.count}</span>}
+          {/* On the pressed chip's tinted fill only the text token is sure to stay at 4.5:1. */}
+          {item.count !== undefined && <span className={cn('tabular', item.pressed ? 'text-text' : 'text-text-muted')}>{item.count}</span>}
         </button>
       ))}
     </div>

@@ -4,7 +4,8 @@ import type { Platform } from '@shared/types/primitives';
 import type { PlayerProfile, PlayerRef } from '@shared/types/player';
 import { playerPath } from '../../../app/routes';
 import { cn } from '../../../lib/cn';
-import { PLATFORM_LABEL, PLATFORMS } from '../../../shell/platforms';
+import { PLATFORM_LABEL } from '../../../components';
+import { PLATFORMS } from '../../../shell/platforms';
 import { Popover } from '../../../shell/Popover';
 import { Button } from '../../../ui';
 import { openGlobalSearch } from '../../search/open-search';
@@ -29,7 +30,7 @@ function linkSummary(linked: readonly PlayerRef[] | null): string {
 
 /**
  * PC / PlayStation / Xbox (design question 14). The account's own platform is selected. A platform the data source
- * links to this player opens that account's profile. Any other platform is shown muted but stays focusable: it opens
+ * links to this player opens that account's profile. Any other platform is shown in muted text and stays focusable: it opens
  * a short explanation and offers an ordinary search for the same name there, since an equal name proves nothing.
  */
 export function PlatformSwitch({ profile, tab }: PlatformSwitchProps) {
@@ -54,7 +55,8 @@ export function PlatformSwitch({ profile, tab }: PlatformSwitchProps) {
           );
           if (platform === player.platform) {
             return (
-              <span key={platform} aria-current="page" className={cn(SEGMENT, 'bg-accent text-on-accent')}>
+              // The inset accent-text edge keeps the selection visible where the accent fill alone is under 3:1.
+              <span key={platform} aria-current="page" className={cn(SEGMENT, 'bg-accent text-on-accent shadow-[inset_0_0_0_1px_var(--accent-text)]')}>
                 {content}
               </span>
             );
@@ -81,7 +83,10 @@ export function PlatformSwitch({ profile, tab }: PlatformSwitchProps) {
   );
 }
 
-/** A platform with no linked account: disabled-looking, focusable, and explains itself in a small panel. */
+/**
+ * A platform with no linked account: muted text (not dimmed further: it is an active control and keeps 4.5:1),
+ * focusable, and explains itself in a small panel.
+ */
 function UnlinkedPlatform({ platform, name, sourceShowsLinks }: { platform: Platform; name: string; sourceShowsLinks: boolean }) {
   const label = PLATFORM_LABEL[platform];
   const Icon = ICON[platform];
@@ -95,11 +100,7 @@ function UnlinkedPlatform({ platform, name, sourceShowsLinks }: { platform: Plat
           type="button"
           {...props}
           aria-label={`${label}, no linked account`}
-          className={cn(
-            SEGMENT,
-            'h-full text-text-muted opacity-60 hover:bg-surface hover:opacity-100',
-            open && 'bg-surface opacity-100',
-          )}
+          className={cn(SEGMENT, 'h-full text-text-muted hover:bg-surface', open && 'bg-surface')}
         >
           <Icon className="size-3.5 shrink-0" aria-hidden />
           {label}

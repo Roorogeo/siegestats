@@ -28,7 +28,9 @@ function MatchDetails({ id, pov }: { id: MatchId; pov: PlayerKey | null }) {
     return (
       <div className={PAGE}>
         {back}
-        <h1 className="sr-only">Match details</h1>
+        <h1 tabIndex={-1} className="sr-only outline-none">
+          Match details
+        </h1>
         <Card flush>
           <QueryError error={query.error} title="This match could not be loaded" onRetry={() => void query.refetch()} />
         </Card>

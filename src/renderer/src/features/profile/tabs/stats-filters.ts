@@ -3,47 +3,27 @@ import { useSearchParams } from 'react-router';
 import type { GameIndex } from '@shared/game-config';
 import type { PlaylistId, SeasonId } from '@shared/types/primitives';
 import type { PlayerKey } from '@shared/types/player';
-import type { PlayerStatsQuery } from '@shared/types/provider';
 import type { SeasonRecord } from '@shared/types/stats';
-import { useGame } from '../../../app/GameConfigProvider';
+import { useCurrentSeason, useGame } from '../../../app/GameConfigProvider';
 import { useSeasons } from '../../../queries';
 import type { SelectOption } from './FilterSelect';
+import { ALL, readFilters, seasonLabel, type FilterPrefix, type StatsFilters } from './stats-params';
 
-/**
- * The season / playlist filters of the Operators and Maps tabs, kept in the URL so back and forward restore them.
- * Each tab has its own prefix ("o" operators, "m" maps): oseason=Y11S2&oplaylist=ranked. The season defaults to the
- * current one and the playlist to all; defaults are left out of the URL. The map filter is Home's (design
- * question 23), so these queries always ask for every map.
- */
-export interface StatsFilters {
-  seasonId: SeasonId | 'all';
-  playlistId: PlaylistId | 'all';
-}
-
-export type FilterPrefix = 'o' | 'm';
-
-const ALL = 'all';
-
-function readFilters(params: URLSearchParams, prefix: FilterPrefix, game: GameIndex): StatsFilters {
-  const season = params.get(`${prefix}season`);
-  const playlist = params.get(`${prefix}playlist`);
-  return {
-    seasonId: season === ALL ? ALL : ((season === null ? null : game.season(season)?.id) ?? game.currentSeason().id),
-    playlistId: (playlist === null ? null : game.playlist(playlist)?.id) ?? ALL,
-  };
-}
+/** The pure half (URL params, the query, labels, scope totals) is in stats-params.ts; the tabs import both from here. */
+export { readFilters, scopeTotal, seasonLabel, statsQuery, type FilterPrefix, type StatsFilters } from './stats-params';
 
 /** Reads and writes one tab's filters. Every change is a new history entry. */
 export function useStatsFilters(prefix: FilterPrefix): [StatsFilters, (patch: Partial<StatsFilters>) => void] {
   const game = useGame();
+  const currentSeasonId = useCurrentSeason().id;
   const [params, setParams] = useSearchParams();
-  const filters = readFilters(params, prefix, game);
+  const filters = readFilters(params, prefix, game, currentSeasonId);
   const update = (patch: Partial<StatsFilters>): void =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev);
         if (patch.seasonId !== undefined) {
-          if (patch.seasonId === game.currentSeason().id) next.delete(`${prefix}season`);
+          if (patch.seasonId === currentSeasonId) next.delete(`${prefix}season`);
           else next.set(`${prefix}season`, patch.seasonId);
         }
         if (patch.playlistId !== undefined) {
@@ -57,20 +37,7 @@ export function useStatsFilters(prefix: FilterPrefix): [StatsFilters, (patch: Pa
   return [filters, update];
 }
 
-export const statsQuery = (player: PlayerKey, filters: StatsFilters): PlayerStatsQuery => ({
-  player,
-  seasonId: filters.seasonId,
-  playlistId: filters.playlistId,
-  mapId: ALL,
-});
-
 const seasonNumber = (game: GameIndex, id: string): number => game.season(id)?.number ?? -1;
-
-/** "Operation Silent Hunt (Y11S1)"; an id the config does not know shows as itself. */
-export const seasonLabel = (game: GameIndex, id: SeasonId): string => {
-  const season = game.season(id);
-  return season ? `${season.name} (${season.id})` : id;
-};
 
 export interface FilterOptions {
   seasons: SelectOption<SeasonId | 'all'>[];
@@ -88,10 +55,10 @@ export interface FilterOptions {
  */
 export function useFilterOptions(player: PlayerKey, filters: StatsFilters): FilterOptions {
   const game = useGame();
+  const current = useCurrentSeason().id;
   const seasons = useSeasons(player);
   const records = seasons.data?.data;
   return useMemo(() => {
-    const current = game.currentSeason().id;
     const seasonIds = new Set<SeasonId>([current, ...(records ?? []).map((r) => r.seasonId)]);
     if (filters.seasonId !== ALL) seasonIds.add(filters.seasonId);
     const seasonOptions: SelectOption<SeasonId | 'all'>[] = [
@@ -110,5 +77,5 @@ export function useFilterOptions(player: PlayerKey, filters: StatsFilters): Filt
         .map((p) => ({ id: p.id, label: p.name })),
     ];
     return { seasons: seasonOptions, playlists: playlistOptions, record, records };
-  }, [game, records, filters.seasonId, filters.playlistId]);
+  }, [game, current, records, filters.seasonId, filters.playlistId]);
 }

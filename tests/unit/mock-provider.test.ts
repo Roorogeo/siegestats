@@ -198,22 +198,121 @@ describe('getOperators and getMaps', () => {
     expect(profile.currentSeason.bestDefender).toEqual(top('defense'));
   });
 
-  test('map stats sum to the filtered matches; the map filter keeps one row', async () => {
-    const maps = await provider.getMaps({ player: keyOf(busiest), seasonId: 'all', playlistId: 'all', mapId: 'all' });
-    const { items } = await everyPage(query({ limit: 100 }));
+  test('map stats of a season with listed matches sum to those matches; the map filter keeps one row', async () => {
+    const season = { kind: 'season', seasonId: 'Y11S3' as SeasonId } as const;
+    const maps = await provider.getMaps({ player: keyOf(busiest), seasonId: season.seasonId, playlistId: 'all', mapId: 'all' });
+    const { items } = await everyPage(query({ period: season, limit: 100 }));
     expect(maps.reduce((s, m) => s + m.matches, 0)).toBe(items.length);
-    const one = maps[0];
-    const only = await provider.getMaps({ player: keyOf(busiest), seasonId: 'all', playlistId: 'all', mapId: one?.mapId as MapId });
-    expect(only).toEqual([one]);
+    for (const row of maps) expect(row.matches).toBe(items.filter((m) => m.mapId === row.mapId).length);
+    for (const seasonId of ['Y11S3', 'all'] as const) {
+      const rows = seasonId === 'all' ? await provider.getMaps({ player: keyOf(busiest), seasonId, playlistId: 'all', mapId: 'all' }) : maps;
+      const one = rows[0];
+      const only = await provider.getMaps({ player: keyOf(busiest), seasonId: seasonId as SeasonId, playlistId: 'all', mapId: one?.mapId as MapId });
+      expect(only).toEqual([one]);
+    }
   });
 
-  test('a summary-only season knows only its best operators', async () => {
+  test('a summary-only season has a full breakdown: per map and per operator, per playlist, released ones only', async () => {
     const seasons = await provider.getSeasons(keyOf(busiest));
-    const old = seasons.find((s) => s.seasonId === 'Y10S1');
+    const old = seasons.find((s) => world.seasons.get(`${busiest.platform}:${busiest.id}`)?.get(s.seasonId)?.fromMatches === false);
+    expect(old).toBeDefined();
     if (!old) return;
-    const ops = await provider.getOperators({ player: keyOf(busiest), seasonId: old.seasonId, playlistId: 'all', mapId: 'all' });
-    expect(ops.map((o) => o.operatorId).sort()).toEqual([old.bestAttacker?.operatorId, old.bestDefender?.operatorId].filter(Boolean).sort());
-    expect(await provider.getMaps({ player: keyOf(busiest), seasonId: old.seasonId, playlistId: 'all', mapId: 'all' })).toEqual([]);
+    const at = (playlistId: PlaylistId | 'all') => ({ player: keyOf(busiest), seasonId: old.seasonId, playlistId, mapId: 'all' as const });
+    const ops = await provider.getOperators(at('all'));
+    const maps = await provider.getMaps(at('all'));
+    expect(ops.length).toBeGreaterThan(4);
+    expect(maps.length).toBeGreaterThan(4);
+    expect(ops.reduce((s, o) => s + o.rounds, 0)).toBe(old.overall.rounds);
+    expect(ops.reduce((s, o) => s + o.kills, 0)).toBe(old.overall.kills);
+    expect(ops.reduce((s, o) => s + o.deaths, 0)).toBe(old.overall.deaths);
+    expect(maps.reduce((s, m) => s + m.matches, 0)).toBe(old.overall.matches);
+    expect(maps.reduce((s, m) => s + m.wins, 0)).toBe(old.overall.wins);
+    expect(maps.reduce((s, m) => s + m.kills, 0)).toBe(old.overall.kills);
+    expect(maps.reduce((s, m) => s + (m.rounds ?? 0), 0)).toBe(old.overall.rounds);
+    for (const o of ops) {
+      expect(o.roundsWon).toBeLessThanOrEqual(o.rounds);
+      expect(o.deaths).toBeLessThanOrEqual(o.rounds);
+      expect(o.headshotPct ?? 0).toBeLessThanOrEqual(1);
+      const def = game.operator(o.operatorId);
+      expect(def && game.releasedIn(def, old.seasonId), `${o.operatorId} in ${old.seasonId}`).toBe(true);
+    }
+    for (const m of maps) {
+      expect(m.wins + m.losses).toBe(m.matches);
+      expect(m.rounds ?? 0).toBeGreaterThanOrEqual(m.matches);
+    }
+    for (const line of old.byPlaylist) {
+      const perPlaylistOps = await provider.getOperators(at(line.playlistId));
+      const perPlaylistMaps = await provider.getMaps(at(line.playlistId));
+      expect(perPlaylistOps.reduce((s, o) => s + o.rounds, 0)).toBe(line.rounds);
+      expect(perPlaylistMaps.reduce((s, m) => s + m.matches, 0)).toBe(line.matches);
+    }
+    // A summary season has nothing per map and operator together.
+    expect(await provider.getOperators({ ...at('all'), mapId: maps[0]?.mapId as MapId })).toEqual([]);
+  });
+});
+
+describe('Operators and Maps cover every match the records count (several accounts, every season and All seasons)', () => {
+  const accounts = [...world.accounts]
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .filter((_, i) => i % 37 === 0)
+    .concat(world.accounts.filter((a) => a.key === 'pc:17c92055-6505-482b-922b-f80b5a5c03a1'));
+  const sum = <T>(rows: readonly T[], f: (row: T) => number): number => rows.reduce((s, row) => s + f(row), 0);
+
+  test('sums per season and for All seasons, overall and per playlist; the best operators are the top rows', async () => {
+    let summarySeasons = 0;
+    for (const a of accounts) {
+      const player = keyOf(a.ref);
+      const records = await provider.getSeasons(player);
+      const profile = await provider.getProfile(player);
+      const scopes = [
+        ...records.map((r) => ({ seasonId: r.seasonId as SeasonId | 'all', overall: r.overall, byPlaylist: r.byPlaylist, record: r })),
+        { seasonId: 'all' as const, overall: profile.lifetime, byPlaylist: null, record: null },
+      ];
+      for (const scope of scopes) {
+        const q = { player, seasonId: scope.seasonId, mapId: 'all' as const };
+        const maps = await provider.getMaps({ ...q, playlistId: 'all' });
+        const ops = await provider.getOperators({ ...q, playlistId: 'all' });
+        const label = `${a.ref.name} ${scope.seasonId}`;
+        if (!scope.overall) throw new Error(`${label}: no totals`);
+        expect(sum(maps, (m) => m.matches), label).toBe(scope.overall.matches);
+        expect(sum(maps, (m) => m.kills), label).toBe(scope.overall.kills);
+        expect(sum(ops, (o) => o.rounds), label).toBe(scope.overall.rounds);
+        expect(sum(ops, (o) => o.kills), label).toBe(scope.overall.kills);
+        for (const o of ops) {
+          const def = game.operator(o.operatorId);
+          if (scope.seasonId !== 'all') expect(def && game.releasedIn(def, scope.seasonId), `${label} ${o.operatorId}`).toBe(true);
+        }
+        // Per playlist: a season's lines, or for All seasons the sum of every season's line of that playlist.
+        const lines = scope.byPlaylist ?? game.config.playlists.map((pl) => {
+          const of = records.flatMap((r) => r.byPlaylist.filter((l) => l.playlistId === pl.id));
+          return { playlistId: pl.id, matches: sum(of, (l) => l.matches), rounds: sum(of, (l) => l.rounds ?? 0) };
+        });
+        for (const line of lines) {
+          const pm = await provider.getMaps({ ...q, playlistId: line.playlistId });
+          const po = await provider.getOperators({ ...q, playlistId: line.playlistId });
+          expect(sum(pm, (m) => m.matches), `${label} ${line.playlistId}`).toBe(line.matches);
+          expect(sum(po, (o) => o.rounds), `${label} ${line.playlistId}`).toBe(line.rounds ?? 0);
+        }
+        if (scope.record) {
+          const top = (side: 'attack' | 'defense') => ops.find((o) => game.operator(o.operatorId)?.side === side) ?? null;
+          expect(scope.record.bestAttacker, label).toEqual(top('attack'));
+          expect(scope.record.bestDefender, label).toEqual(top('defense'));
+          if (world.seasons.get(a.key)?.get(scope.record.seasonId)?.fromMatches === false) summarySeasons += 1;
+        }
+      }
+    }
+    expect(summarySeasons).toBeGreaterThan(5);
+  });
+
+  test('a season Operators list has a clear head and a long, thin tail', async () => {
+    const active = [...world.accounts].sort((a, b) => (world.participations.get(b.key)?.length ?? 0) - (world.participations.get(a.key)?.length ?? 0)).slice(0, 10);
+    for (const a of active) {
+      const ops = await provider.getOperators({ player: keyOf(a.ref), seasonId: world.currentSeasonId, playlistId: 'all', mapId: 'all' });
+      const rounds = sum(ops, (o) => o.rounds);
+      expect(sum(ops.slice(0, 5), (o) => o.rounds) / rounds, a.ref.name).toBeGreaterThan(0.55);
+      expect(ops.length).toBeGreaterThan(12);
+      expect(ops.filter((o) => o.rounds <= 3).length).toBeGreaterThan(3);
+    }
   });
 });
 

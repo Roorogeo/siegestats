@@ -53,6 +53,11 @@ export interface GameIndex {
   playlistsWithPoints(): readonly PlaylistDef[];
   /** Whether the playlist existed in that season, by its firstSeasonId / lastSeasonId. */
   playlistActiveIn(playlistId: string, seasonId: string): boolean;
+  /**
+   * Whether an operator or map existed in that season: released in it or before, by its firstSeasonId (null =
+   * before the config's first season). false for a season the config does not know.
+   */
+  releasedIn(entity: { readonly firstSeasonId: string | null }, seasonId: string): boolean;
   operator(id: string): OperatorDef | null;
   /** Operators of that side, plus those playable on both sides. */
   operatorsBySide(side: Side): readonly OperatorDef[];
@@ -156,6 +161,11 @@ export function createGameIndex(config: GameConfig): GameIndex {
       const first = playlist.firstSeasonId === null ? 0 : (seasonOrder.get(playlist.firstSeasonId) ?? 0);
       const last = playlist.lastSeasonId === null ? Infinity : (seasonOrder.get(playlist.lastSeasonId) ?? Infinity);
       return at >= first && at <= last;
+    },
+    releasedIn(entity, seasonId) {
+      const at = seasonOrder.get(seasonId);
+      if (at === undefined) return false;
+      return entity.firstSeasonId === null || at >= (seasonOrder.get(entity.firstSeasonId) ?? 0);
     },
     operator: (id) => operators.get(id) ?? null,
     operatorsBySide: (side) => bySide[side] ?? [],

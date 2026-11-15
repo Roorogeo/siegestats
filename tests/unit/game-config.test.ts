@@ -87,9 +87,55 @@ describe('the bundled game config', () => {
     expect(game.playlistActiveIn('legend-division', 'Y11S3')).toBe(true);
     expect(game.playlistActiveIn('dual-front', 'Y11S2')).toBe(false);
   });
+
+  test('round rules: overtime at 3-3 to 5 in Ranked and Legend Division, one deciding round at 3-3 in Standard', () => {
+    for (const id of ['ranked', 'legend-division']) {
+      expect(game.playlist(id)).toMatchObject({ overtime: { at: 3, roundsToWin: 5 }, decidingRoundAt: null });
+    }
+    expect(game.playlist('standard')).toMatchObject({ overtime: null, decidingRoundAt: 3 });
+    for (const p of config.playlists) {
+      if (!['ranked', 'legend', 'standard'].includes(p.kind)) expect(p, p.id).toMatchObject({ overtime: null, decidingRoundAt: null });
+    }
+  });
+
+  test('release seasons and playlist kinds of operators and maps', () => {
+    expect(game.operator('noor')?.firstSeasonId).toBe('Y11S3');
+    expect(game.operator('solid-snake')?.firstSeasonId).toBe('Y11S1');
+    expect(game.operator('ace')?.firstSeasonId).toBeNull();
+    expect(game.map('calypso-casino')?.firstSeasonId).toBe('Y11S2');
+    // Every release season is a config season, and the newest operator is Noor.
+    const order: string[] = config.seasons.map((s) => s.id);
+    const releases = config.operators.flatMap((o) => (o.firstSeasonId ? [order.indexOf(o.firstSeasonId)] : []));
+    expect(Math.max(...releases)).toBe(order.indexOf('Y11S3'));
+    for (const id of ['close-quarter', 'stadium-alpha', 'stadium-bravo', 'favela', 'house', 'tower', 'yacht', 'presidential-plane', 'hereford-base']) {
+      expect(game.map(id)?.playlistKinds, id).not.toContain('ranked');
+    }
+    expect(game.map('bank')?.playlistKinds).toBeNull();
+  });
 });
 
 describe('game index lookups', () => {
+  test('releasedIn: from the release season on, always for null, never for an unknown season', () => {
+    const noor = game.operator('noor');
+    const ace = game.operator('ace');
+    if (!noor || !ace) throw new Error('operators missing');
+    expect(game.releasedIn(noor, 'Y11S2')).toBe(false);
+    expect(game.releasedIn(noor, 'Y11S3')).toBe(true);
+    expect(game.releasedIn(noor, 'Y11S4')).toBe(true);
+    expect(game.releasedIn(ace, 'Y7S4')).toBe(true);
+    expect(game.releasedIn(ace, 'Y99S1')).toBe(false);
+    const casino = game.map('calypso-casino');
+    expect(casino && game.releasedIn(casino, 'Y11S1')).toBe(false);
+    expect(casino && game.releasedIn(casino, 'Y11S2')).toBe(true);
+  });
+
+  test('currentSeasonAt: the season in force, else the config fallback', () => {
+    expect(game.currentSeasonAt('2026-11-30T23:59:00.000Z').id).toBe('Y11S3');
+    expect(game.currentSeasonAt('2026-12-01T00:00:00.000Z').id).toBe('Y11S4');
+    expect(game.currentSeasonAt('2019-01-01T00:00:00.000Z').id).toBe(config.currentSeasonId);
+    expect(game.currentSeasonAt('not a date').id).toBe(config.currentSeasonId);
+  });
+
   test('rankForPoints: division boundaries, open-ended top, null below the lowest rank', () => {
     expect(game.rankForPoints('ranked-3', 999)).toBeNull();
     expect(game.rankForPoints('ranked-3', 1000)?.id).toBe('r3.copper-5');
@@ -213,6 +259,37 @@ describe('validateGameConfig', () => {
     expect(message).toContain('only the top rank may have maxPoints null');
     expect(message).toContain('config.seasons[0].number: Y7S4 is season number 28, not 27');
     expect(message).toContain('"Y8S1" has no end date but "Y8S2" follows it');
+  });
+
+  test('round rules, release seasons and playlist kinds are checked', () => {
+    const c = raw() as unknown as { playlists: Record<string, unknown>[]; operators: Record<string, unknown>[]; maps: Record<string, unknown>[] };
+    const [ranked, legend, standard, quick, arcade] = c.playlists as [Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, Record<string, unknown>];
+    ranked.overtime = { at: 3, roundsToWin: 3 };
+    legend.overtime = { at: 2.5, roundsToWin: 5 };
+    standard.overtime = { at: 3, roundsToWin: 5 }; // standard also has decidingRoundAt 3
+    quick.decidingRoundAt = 0;
+    arcade.overtime = 'yes';
+    const [op0] = c.operators as [Record<string, unknown>];
+    op0.firstSeasonId = 'Y99S1';
+    const [map0, map1, map2, map3, map4] = c.maps as [Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, Record<string, unknown>];
+    map0.firstSeasonId = 'Y3S1';
+    map1.playlistKinds = [];
+    map2.playlistKinds = ['ranked', 'casual'];
+    map3.playlistKinds = ['ranked', 'ranked'];
+    map4.playlistKinds = 'ranked';
+
+    const message = problemsOf(c);
+    expect(message).toContain('config.playlists[0].overtime.roundsToWin: must be greater than at');
+    expect(message).toContain('config.playlists[1].overtime.at: must be an integer');
+    expect(message).toContain('config.playlists[2].decidingRoundAt: must be null when overtime is set');
+    expect(message).toContain('config.playlists[3].decidingRoundAt: must be a positive integer or null');
+    expect(message).toContain('config.playlists[4].overtime: must be null or { at, roundsToWin }');
+    expect(message).toContain('config.operators[0].firstSeasonId: unknown season "Y99S1"');
+    expect(message).toContain('config.maps[0].firstSeasonId: unknown season "Y3S1"');
+    expect(message).toContain('config.maps[1].playlistKinds: must be null (every kind) or list at least one kind');
+    expect(message).toContain('config.maps[2].playlistKinds[1]: must be one of');
+    expect(message).toContain('config.maps[3].playlistKinds: duplicate playlist kind id "ranked"');
+    expect(message).toContain('config.maps[4].playlistKinds: must be an array');
   });
 
   test('unknown keys are dropped from the validated result', () => {

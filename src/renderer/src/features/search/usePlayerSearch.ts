@@ -3,14 +3,15 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 're
 import type { IsoDateTime, Platform } from '@shared/types/primitives';
 import type { PlayerRef, PlayerSearchResult } from '@shared/types/player';
 import type { AppError } from '@shared/types/provider';
+import { playerKeyString, toPlayerRef } from '@shared/util/player';
 import { useAppInfo } from '../../app/AppInfoProvider';
 import { useSettings } from '../../app/SettingsProvider';
 import {
   callStats, isForced, queryKeys, useFavorites, useRecentSearches, useRememberSearch, useSearchPlayers,
 } from '../../queries';
-import { PLATFORM_LABEL } from '../../shell/platforms';
+import { PLATFORM_LABEL } from '../../components';
 import {
-  MAX_FAVORITES_SHOWN, orderResults, playerKeyOf, SEARCH_DEBOUNCE_MS, SEARCH_LIMIT, stepIndex, toPlayerRef, withoutRepeats,
+  MAX_FAVORITES_SHOWN, orderResults, SEARCH_DEBOUNCE_MS, SEARCH_LIMIT, stepIndex, withoutRepeats,
   type SuggestionKind,
 } from './search-model';
 import type { SearchRequest } from './open-search';
@@ -162,7 +163,7 @@ export function usePlayerSearch({ idPrefix, suggestions, enabled, onChoose, clea
   const current = name !== '' && forTyped && query.isSuccess ? query.data.data : null;
 
   const optionOf = (group: string, player: PlayerRef, index: number): SearchOption => ({
-    key: `${group}:${playerKeyOf(player)}`,
+    key: `${group}:${playerKeyString(player)}`,
     domId: `${idPrefix}-${group}-${index}`,
     player: toPlayerRef(player),
   });

@@ -15,6 +15,7 @@ export function Card({ children, flush = false, className, ...rest }: CardProps)
   );
 }
 
+/** A card's title, at SectionCard's title size. */
 export function CardTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h2 className={cn('text-[13px] font-semibold text-text', className)}>{children}</h2>;
+  return <h2 className={cn('text-[15px] leading-6 font-semibold text-text', className)}>{children}</h2>;
 }

@@ -21,13 +21,24 @@ async function open(page: Page, appUrl: string, route = '/'): Promise<string[]> 
   return errors;
 }
 
+/** The built chunk that exports the browser bridge, whatever the bundler named it. */
+const EXPORTS_BRIDGE = /export\s*\{[^}]*\bcreateBrowserBridge\s*\}/;
+
 /**
  * Makes the in-page stats source fail the next `times` player searches with `error`, by serving a wrapper in place of
  * the browser bridge's module: the browser build has no other seam, and nothing here touches the app's own code.
  */
 async function failSearches(page: Page, error: { code: string; message: string }, times: number): Promise<void> {
   await page.addInitScript(([e, n]) => Object.assign(window, { searchFailure: { error: e, left: n } }), [error, times] as const);
-  await page.route(/\/assets\/browser-bridge-[^/?]+\.js$/, async (route) => {
+  // Every script of the build passes through unchanged except the one that exports createBrowserBridge. The wrapper's
+  // own import of it (with "?real") does not end in ".js", so it is not routed.
+  await page.route(/\/assets\/[^/?]+\.js$/, async (route) => {
+    const response = await route.fetch();
+    const source = await response.text();
+    if (!EXPORTS_BRIDGE.test(source)) {
+      await route.fulfill({ response, body: source });
+      return;
+    }
     const file = new URL(route.request().url()).pathname.split('/').pop() ?? '';
     await route.fulfill({
       contentType: 'text/javascript',
@@ -82,6 +93,14 @@ test('typing part of a handle lists matching players for the platform, exact mat
   // Each row shows level, rank and last played; unknown values are a dash, never 0.
   await expect(pc.getByRole('option').first()).toContainText(/Lv (\d[\d,]*|–)/);
   await expect(pc.getByRole('option').first().getByRole('img')).toHaveAccessibleName(/.+/);
+  // The option's name is the row's visible words in order ("Lv 236", the badge's "S5" before "Silver V", "14 h ago").
+  const row = pc.getByRole('option').first();
+  const level = (await row.locator('[title="Level"]').innerText()).trim();
+  const badge = (await row.getByRole('img').innerText()).trim();
+  const played = (await row.locator('[title="Last played"]').innerText()).trim();
+  const escape = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const rankWords = /^[–?]$/.test(badge) ? '[^,]+' : `${escape(badge)}\\b[^,]*`;
+  await expect(row).toHaveAccessibleName(new RegExp(`^[^,]+, (Exact match, )?${escape(level)}, ${rankWords}, ${escape(played)}$`));
 
   // Another platform is another set of accounts.
   await platformSelect(page).selectOption('xbl');
@@ -118,6 +137,16 @@ test('arrow keys move the active option and wrap, Enter opens the profile, and t
   await page.keyboard.press('ArrowDown');
   await expect(options.nth(0)).toHaveAttribute('aria-selected', 'true');
   expect(await active()).toBe(await options.nth(0).getAttribute('id'));
+  // The active option's bar is in accent-text, which keeps 3:1 on the hover tint it sits on in every theme.
+  const accentText = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--accent-text)';
+    document.body.append(probe);
+    const value = getComputedStyle(probe).color;
+    probe.remove();
+    return value;
+  });
+  expect(await options.nth(0).evaluate((element) => getComputedStyle(element).boxShadow)).toContain(accentText);
   await page.keyboard.press('ArrowDown');
   await expect(options.nth(1)).toHaveAttribute('aria-selected', 'true');
   await expect(options.nth(0)).toHaveAttribute('aria-selected', 'false');
@@ -137,12 +166,14 @@ test('arrow keys move the active option and wrap, Enter opens the profile, and t
   await expect(field(page)).toHaveAttribute('aria-expanded', 'false');
   await expect(field(page)).toHaveValue('');
   await expect(field(page)).not.toBeFocused();
+  // Focus moves to the new page's heading, not to the document.
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
 
   // With an empty field, the player is listed under Recent, and opens from there too.
   await page.keyboard.press('Control+k');
   const recent = suggestions(page).getByRole('group', { name: 'Recent' });
   await expect(recent.getByRole('option')).toHaveCount(1);
-  await expect(recent.getByRole('option').first()).toHaveAccessibleName(new RegExp(`^${chosen}, PC, searched just now$`));
+  await expect(recent.getByRole('option').first()).toHaveAccessibleName(new RegExp(`^${chosen}, PC, just now$`));
   const profileHash = hashOf(page);
   await page.keyboard.press('Escape');
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Leaderboards' }).click();

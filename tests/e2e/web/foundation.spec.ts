@@ -55,9 +55,15 @@ test('the component gallery renders real mock data with no console errors', asyn
   if (!plot) throw new Error('chart has no box');
   await page.mouse.move(plot.x + plot.width * 0.6, plot.y + plot.height / 2);
   await expect(chart(page).locator('.recharts-tooltip-wrapper')).toContainText(/\d RP/);
-  await chart(page).getByRole('button', { name: 'Show table' }).click();
+  // The plot is a keyboard stop (Recharts' accessibility layer), so it carries the chart's name.
+  await expect(chart(page).getByRole('application')).toHaveAccessibleName('Ranked points after every match');
+  // The toggle names what it does next; no aria-pressed on top of a label that changes.
+  const toggle = chart(page).getByRole('button', { name: 'Show table' });
+  await expect(toggle).not.toHaveAttribute('aria-pressed');
+  await toggle.click();
   const table = page.getByRole('table', { name: 'Ranked points after every match (table)' });
   await expect(table.locator('tbody tr').nth(1)).toBeVisible();
+  await expect(chart(page).getByRole('button', { name: 'Show chart' })).toBeVisible();
 
   // Query states come from real AppErrors.
   await expect(page.getByText('Not available from this source').first()).toBeVisible();
@@ -78,10 +84,16 @@ test('sortable headers report aria-sort, and a row opens the player with the key
   const numbers = levels.map((text) => Number(text.replace(/,/g, '')));
   expect(numbers).toEqual([...numbers].sort((a, b) => b - a));
 
-  await board.locator('tbody tr').first().focus();
+  const row = board.locator('tbody tr').first();
+  // The Player cell: the avatar's initials, then the name.
+  const name = (await row.locator('td').nth(1).innerText()).trim().split('\n').at(-1)?.trim() ?? '';
+  expect(name).not.toBe('');
+  await row.focus();
   await page.keyboard.press('Enter');
   await expect.poll(() => new URL(page.url()).hash).toMatch(/^#\/player\/(pc|psn|xbl)\/[^/]+$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Player profile');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(name, { timeout: 15_000 });
+  // The row went with the gallery: focus is on the profile's heading, not dropped to the document.
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   expect(errors).toEqual([]);
 });
 
@@ -140,5 +152,31 @@ test('filter chips and segmented controls work from the keyboard', async ({ page
   await expect(period.getByRole('radio', { name: '90 days' })).toBeFocused();
   await page.keyboard.press('End');
   await expect(period.getByRole('radio', { name: 'Season' })).toHaveAttribute('aria-checked', 'true');
+  expect(errors).toEqual([]);
+});
+
+test('a pressed filter chip writes its count in the text colour, which keeps 4.5:1 on the pressed fill', async ({ page, appUrl }) => {
+  const errors = await open(page, appUrl, '/player/pc/17c92055-6505-482b-922b-f80b5a5c03a1');
+  const chips = page.getByRole('group', { name: 'Playlists' });
+  const chip = chips.getByRole('button').filter({ hasText: /\d/ }).first();
+  await expect(chip).toBeVisible({ timeout: 15_000 });
+  const count = chip.locator('.tabular');
+  const colours = async (): Promise<{ count: string; text: string; muted: string }> =>
+    count.evaluate((element) => {
+      const probe = (token: string): string => {
+        const span = document.createElement('span');
+        span.style.color = `var(${token})`;
+        document.body.append(span);
+        const value = getComputedStyle(span).color;
+        span.remove();
+        return value;
+      };
+      return { count: getComputedStyle(element).color, text: probe('--text'), muted: probe('--text-muted') };
+    });
+  const before = await colours();
+  expect(before.count).toBe(before.muted);
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(async () => (await colours()).count).toBe(before.text);
   expect(errors).toEqual([]);
 });

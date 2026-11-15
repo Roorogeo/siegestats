@@ -3,7 +3,7 @@ import type { PlayerRef } from '@shared/types/player';
 import { cn } from '../../../lib/cn';
 import { useFavoriteToggle, useUpdatePlayer } from '../../../queries';
 import { Button, IconButton } from '../../../ui';
-import { usePinnedAccounts } from '../pinning';
+import { usePinnedAccounts } from '../usePinnedAccounts';
 
 /**
  * The header's three actions: the favourite star, "Pin as mine" (or "Pinned" + Unpin) and Update. Each keeps its
