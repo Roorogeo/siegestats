@@ -1,9 +1,9 @@
-# Design notes (before phase 1)
+# Design notes
 
-Status: pre-code. This file holds the planned folder structure and the open questions from the brief.
-The core types are in `src/shared/types/`. No application code exists yet.
+Status: phase 1 done; phase 2 in progress. This file holds the folder structure and the open questions
+from the brief, with the owner's answers where given. The core types are in `src/shared/types/`.
 
-Working name: "Sightline" (placeholder, see question 2).
+App name: Sightline. Publisher: Rinkexe (question 2).
 
 **Sources.** Overwolf's and Ubisoft's websites could not be opened while this was written.
 "Verified" means read directly in Overwolf's npm packages, its sample project or its archived docs
@@ -100,6 +100,7 @@ siegestats/
 ### Needed before phase 1
 
 1. **Will you apply to Overwolf?** Only the owner can, and it has waiting time.
+   - **Answer (owner): yes, the owner plans to apply.** Still open: (b) below.
    - Verified: Overwolf's live-events component stays switched off unless the app runs with an Overwolf
      developer login (development), or is signed by Overwolf for an app registered in the owner's account and
      also signed with the owner's own Windows code-signing certificate (release).
@@ -111,7 +112,8 @@ siegestats/
    - Default: phases 1-6 are unaffected. Phase 7 delivers the Overwolf source checked against documentation
      and sample events only, never against the game. If the answer is no, the brief allows no other live
      source and Live Match stays a simulator.
-2. **App name and publisher name.** Working name "Sightline" (alternatives "Rappel", "Dronephase"), not
+2. **App name and publisher name.** **Answer (owner): Sightline, published by Rinkexe.** Set as
+   `productName` and `author.name` in `package.json`, and in the Windows app id `com.rinkexe.sightline`. Not
    checked against existing trademarks. The name and author field set the app's data folder and later its
    Overwolf registration, so both are needed before phase 1 writes `package.json`.
 3. **Theme rules that contradict each other** (computed for all 56):
@@ -158,6 +160,9 @@ siegestats/
    the user opts in. The uninstaller Overwolf's build tool generates also sends one uninstall ping, and no
    switch for it was found. Default: disclose that on the About screen. The app has no telemetry of its own.
 8. **Where real stats come from.** If a backend API already exists, it should be shared now.
+   - **Answer (owner): a backend probably exists; its API description is still to come.** Phase 2 is built
+     on MockProvider and these types either way; LiveProvider (phase 7) translates the backend's responses
+     into them, so the backend's shape does not change the app's types.
    - No official public Siege stats API was found. Community libraries sign in to unofficial Ubisoft
      endpoints, Ubisoft's terms reportedly prohibit scraping at scale, and Tracker Network reportedly does
      not offer Siege on its developer API.

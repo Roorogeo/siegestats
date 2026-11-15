@@ -6,7 +6,9 @@
   "private": true,
   "type": "module",
   "main": "./out/main/index.js",
-  "author": "Sightline",
+  "author": {
+    "name": "Rinkexe"
+  },
   "engines": {
     "node": ">=22.12.0"
   },

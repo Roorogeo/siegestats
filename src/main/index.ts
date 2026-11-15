@@ -14,7 +14,8 @@ import { createMainWindow } from './window/main-window';
  * Main process: wiring only. Product logic lives in src/core, UI in src/renderer;
  * this file connects them to Electron and owns nothing else.
  */
-const APP_ID = 'app.sightline.desktop';
+/** Windows app id (taskbar grouping, notifications). Publisher Rinkexe; do not change once released. */
+const APP_ID = 'com.rinkexe.sightline';
 
 // E2E tests point the app at a throwaway profile so they never touch real settings. Development builds only.
 if (!app.isPackaged && process.env.SIGHTLINE_USER_DATA) app.setPath('userData', process.env.SIGHTLINE_USER_DATA);
