@@ -9,9 +9,10 @@ export interface SegmentOption<T extends string> {
 }
 
 interface SegmentedControlProps<T extends string> {
-  options: readonly SegmentOption<T>[];
+  /** T is taken from `value`, so option ids written as literals are checked against it. */
+  options: readonly SegmentOption<NoInfer<T>>[];
   value: T;
-  onChange(id: T): void;
+  onChange(id: NoInfer<T>): void;
   /** Accessible name: "Period". */
   label: string;
   /** sm = 28 px, md = 32 px tall. */
@@ -37,7 +38,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
         className,
       )}
       onKeyDown={(event) => {
-        const target = rovingTarget(event, Math.max(0, current), options.length, (i) => options[i]?.disabled ?? true);
+        const target = rovingTarget(event, Math.max(0, current), options.length, (i) => options[i]?.disabled === true);
         const next = target === null ? undefined : options[target];
         if (!next) return;
         event.preventDefault();

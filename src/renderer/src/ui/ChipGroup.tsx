@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { cn } from '../lib/cn';
 import { rovingTarget } from './roving';
 
@@ -12,10 +12,10 @@ export interface ChipOption<T extends string> {
 }
 
 interface ChipGroupProps<T extends string> {
-  options: readonly ChipOption<T>[];
+  options: readonly ChipOption<NoInfer<T>>[];
   /** 'all' = no filter (the All chip is on). Matches the shape of the query filters, e.g. MatchHistoryQuery.playlistIds. */
   value: readonly T[] | 'all';
-  onChange(value: T[] | 'all'): void;
+  onChange(value: NoInfer<T>[] | 'all'): void;
   /** Accessible name of the group: "Playlists". */
   label: string;
   /** Label of the chip that clears the filter; null = no such chip (an empty selection is then allowed). */
@@ -30,6 +30,8 @@ interface ChipGroupProps<T extends string> {
  */
 export function ChipGroup<T extends string>({ options, value, onChange, label, allLabel = 'All', className }: ChipGroupProps<T>) {
   const ref = useRef<HTMLDivElement>(null);
+  /** The chip that Tab lands on (roving tabindex): the last one focused, else the first selected one. */
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
   const hasAll = allLabel !== null;
   const allOn = value === 'all';
   const selected = new Set<string>(allOn ? [] : value);
@@ -52,7 +54,8 @@ export function ChipGroup<T extends string>({ options, value, onChange, label, a
       onClick: () => toggle(o.id),
     })),
   ];
-  const firstFocusable = Math.max(0, items.findIndex((item) => item.pressed && !item.disabled));
+  const firstPressed = Math.max(0, items.findIndex((item) => item.pressed && !item.disabled));
+  const tabStop = focusIndex !== null && focusIndex < items.length && !items[focusIndex]?.disabled ? focusIndex : firstPressed;
 
   return (
     <div
@@ -67,7 +70,7 @@ export function ChipGroup<T extends string>({ options, value, onChange, label, a
         const target = rovingTarget(event, current, buttons.length, (i) => buttons[i]?.disabled ?? true);
         if (target === null) return;
         event.preventDefault();
-        buttons.forEach((b, i) => (b.tabIndex = i === target ? 0 : -1));
+        setFocusIndex(target);
         buttons[target]?.focus();
       }}
     >
@@ -77,7 +80,8 @@ export function ChipGroup<T extends string>({ options, value, onChange, label, a
           type="button"
           aria-pressed={item.pressed}
           disabled={item.disabled}
-          tabIndex={index === firstFocusable ? 0 : -1}
+          tabIndex={index === tabStop ? 0 : -1}
+          onFocus={() => setFocusIndex(index)}
           onClick={item.onClick}
           className={cn(
             'inline-flex h-7 items-center gap-1 rounded-full border px-3 text-xs font-medium whitespace-nowrap transition-colors',

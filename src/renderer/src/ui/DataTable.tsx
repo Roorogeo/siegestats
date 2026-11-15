@@ -209,7 +209,8 @@ export function DataTable<Row>({
                       : undefined
                   }
                   className={cn(
-                    'group/row',
+                    // The card around the table draws the bottom edge.
+                    'group/row [&:last-child>td]:border-b-0',
                     clickable && 'cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:-outline-offset-2',
                     current && 'bg-surface-2',
                   )}

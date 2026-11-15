@@ -65,10 +65,13 @@ siegestats/
 │        ├─ shell/               title bar, nav buttons, global search, tab bar, account switcher, bell, window controls
 │        ├─ features/            home/ profile/ match/ leaderboards/ (also Legend Division) live-match/ overlay/
 │        │                       search/ favorites/ notifications/ settings/ themes/
-│        ├─ queries/             TanStack Query hooks over bridge.stats
+│        ├─ queries/             TanStack Query hooks over bridge.stats (keys from the request objects, forced Update)
 │        ├─ theme/               applies tokens as CSS variables, follows Windows light/dark
-│        ├─ ui/                  buttons, cards, tabs, tables, skeleton / empty / error states, rank / operator / map badges
-│        ├─ charts/              Recharts wrappers that read the CSS-variable colours
+│        ├─ ui/                  generic: buttons, cards, tabs, chips, segmented control, data table, stat tile, delta,
+│        │                       show more, section card, skeleton / empty / error states (QueryState)
+│        ├─ components/          game-aware: rank / operator / map badges, avatar, platform label (read the game config)
+│        ├─ lib/                 formatting (null renders as an en dash), useNow for "X ago" labels
+│        ├─ charts/              Recharts wrappers that read the CSS-variable colours; rank-division y-axis
 │        └─ styles/index.css     Tailwind entry: utilities mapped to the theme variables
 ├─ tests/                        unit (theme contrast x56, generator determinism, live session, config validation), e2e (Playwright)
 └─ scripts/                      validate game config, theme contrast report, icon build

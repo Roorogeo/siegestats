@@ -1,10 +1,16 @@
-import type { KeyboardEvent } from 'react';
+/** The parts of a keyboard event the movement depends on (a React or DOM KeyboardEvent fits). */
+export interface KeyPress {
+  key: string;
+  altKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+}
 
 /**
  * Arrow-key movement inside a group of buttons (chips, segments): Left / Right (and Up / Down), Home, End.
  * Returns the index to move to, or null when the key is not a movement key. Disabled items are skipped.
  */
-export function rovingTarget(event: KeyboardEvent, current: number, count: number, isDisabled: (index: number) => boolean): number | null {
+export function rovingTarget(event: KeyPress, current: number, count: number, isDisabled: (index: number) => boolean): number | null {
   if (event.altKey || event.ctrlKey || event.metaKey) return null;
   const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
   const edge = event.key === 'Home' ? 0 : event.key === 'End' ? count - 1 : null;
