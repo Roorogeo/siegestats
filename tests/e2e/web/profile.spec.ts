@@ -3,7 +3,7 @@ import { expect, test } from './serve';
 
 /**
  * Player profile and My Profile on the mock data. The accounts below come from the seeded mock world: they depend
- * only on MOCK_SEED and the game config, never on the clock, so they are the same on every run.
+ * only on MOCK_SEED and the game config, never on the clock (their stats do move with it: serve.ts pins every page to TEST_NOW), so they are the same on every run.
  *   LuhalAlt (PC): a full ranked season; the source links one PlayStation account, nothing on Xbox.
  */
 const PLAYER = { platform: 'pc', id: '17c92055-6505-482b-922b-f80b5a5c03a1', name: 'LuhalAlt' } as const;

@@ -3,7 +3,7 @@ import { expect, test } from './serve';
 
 /**
  * The profile's match history and its Seasons, Encounters, Operators, Maps and Linked accounts tabs, on the mock
- * data. The mock's accounts depend only on its fixed seed and the game config, never on the clock (data layer
+ * data. The mock's accounts depend only on its fixed seed and the game config, never on the clock; their stats move with the clock, which serve.ts pins to TEST_NOW (data layer
  * decisions), so these two accounts are the same on every run; their matches move with the date, so nothing below
  * depends on a particular count.
  */
