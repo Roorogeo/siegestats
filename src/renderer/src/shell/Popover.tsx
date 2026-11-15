@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { FLOATING_SHADOW } from '../ui/floating';
 
 /** Spread onto the trigger button. The id is how the popover finds it again to return focus. */
 export interface PopoverTriggerProps {
@@ -27,9 +28,7 @@ const FOCUSABLE = ['a[href]', 'button:not([disabled])', 'input:not([disabled])',
   .map((selector) => `${selector}:not([tabindex="-1"])`)
   .join(', ');
 
-/** Floating panels only: a soft shadow built from the theme's own colours. */
-export const FLOATING_SHADOW =
-  'shadow-[0_8px_24px_color-mix(in_oklab,var(--bg)_70%,transparent)] light-theme:shadow-[0_8px_24px_color-mix(in_oklab,var(--text)_14%,transparent)]';
+export { FLOATING_SHADOW };
 
 /**
  * A non-modal panel anchored under its trigger (no portal: it is absolutely positioned in the trigger's

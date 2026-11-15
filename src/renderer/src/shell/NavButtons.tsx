@@ -6,12 +6,16 @@ import { useHistoryState } from '../app/navigation';
 import { ariaKeyShortcuts, formatHotkey } from '../app/shortcuts';
 import { useSettings } from '../app/SettingsProvider';
 import { cn } from '../lib/cn';
+import { refreshScreen } from '../queries/force';
 import { IconButton } from '../ui';
 
 /** Tooltip with the shortcut, e.g. "Back (Alt+Left)"; the accessible name stays the plain label. */
 const withHint = (label: string, hint: string): string => (hint ? `${label} (${hint})` : label);
 
-/** Back / forward through the app's history, and refresh = re-fetch what the current screen shows. */
+/**
+ * Back / forward through the app's history, and refresh = re-fetch what the current screen shows, bypassing core's
+ * cache (design question 17).
+ */
 export function NavButtons() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -29,7 +33,7 @@ export function NavButtons() {
     const minimum = new Promise<void>((done) => {
       spinTimer.current = window.setTimeout(done, 600);
     });
-    void Promise.allSettled([queryClient.invalidateQueries(), minimum]).then(() => setSpinning(false));
+    void Promise.allSettled([refreshScreen(queryClient), minimum]).then(() => setSpinning(false));
   };
 
   return (

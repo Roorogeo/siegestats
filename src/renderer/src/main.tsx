@@ -6,10 +6,17 @@ import { initBridge } from './bridge';
 import './styles/index.css';
 import { applyTheme } from './theme/apply';
 
-/** Settings are read before the first render, so the app never shows a frame in the wrong theme. */
+/**
+ * Settings are read before the first render, so the app never shows a frame in the wrong theme; the game config
+ * too, so every screen can look up ranks, operators and maps synchronously.
+ */
 async function start(): Promise<void> {
   const bridge = await initBridge();
-  const [info, settings] = await Promise.all([bridge.app.getInfo(), bridge.settings.get()]);
+  const [info, settings, gameConfig] = await Promise.all([
+    bridge.app.getInfo(),
+    bridge.settings.get(),
+    bridge.app.getGameConfig(),
+  ]);
   const systemMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   applyTheme(document.documentElement, resolveActiveTheme(settings.theme, systemMode));
 
@@ -17,7 +24,7 @@ async function start(): Promise<void> {
   if (!root) throw new Error('#root is missing from index.html');
   createRoot(root).render(
     <StrictMode>
-      <App info={info} settings={settings} />
+      <App info={info} settings={settings} gameConfig={gameConfig} />
     </StrictMode>,
   );
 }
