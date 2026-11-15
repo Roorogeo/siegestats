@@ -1,9 +1,11 @@
+import { app } from 'electron';
 import type { AppInfo } from '@shared/types/bridge';
 
 /**
- * The only place that knows which Electron this is. Overwolf's build sets IS_OVERWOLF_ELECTRON;
- * everything Overwolf-specific (phase 7) will live next to this file and nowhere else.
+ * Which Electron build the app runs on. Sightline ships on Overwolf's (@overwolf/ow-electron), which adds
+ * app.overwolf; plain Electron is still told apart so a misconfigured start is visible on the About screen.
  */
 export function detectRuntime(): AppInfo['runtime'] {
-  return 'IS_OVERWOLF_ELECTRON' in process.env ? 'ow-electron' : 'electron';
+  const overwolf = (app as Partial<Pick<Electron.App, 'overwolf'>>).overwolf;
+  return overwolf ? 'ow-electron' : 'electron';
 }

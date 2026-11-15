@@ -15,8 +15,7 @@ repository. "Reportedly" means search-result summaries only.
 siegestats/
 ├─ package.json                  name, productName, author fixed in phase 1 (Overwolf's app id derives from them)
 ├─ electron.vite.config.ts       builds main, preload (one sandbox-safe file) and renderer
-├─ electron-builder.yml          plain-Electron installer (phase 6)
-├─ electron-builder.ow.yml       ow-electron variant (phase 7)
+├─ electron-builder.yml          packaging with @overwolf/ow-electron-builder (completed in phase 6)
 ├─ tsconfig.json                 + tsconfig.pure.json (shared + core: no DOM, no Node, no Electron), .node.json, .web.json
 ├─ eslint.config.js              enforces the import rules below
 ├─ .github/workflows/build-windows.yml   builds the Windows installer
@@ -82,8 +81,11 @@ siegestats/
 
 ### Stack choices that differ from "latest"
 
-- **Electron 44.9.x, not 45.** ow-electron's newest line is 44.9.0, so 45 would make the later switch a
-  downgrade. Electron 44 reportedly reaches end of life around March 2027.
+- **Overwolf's Electron from the start (owner's instruction, phase 2).** The runtime is `@overwolf/ow-electron`
+  44.9.0 (Electron 44.9.0 inside) and packaging uses `@overwolf/ow-electron-builder`; the vanilla `electron` and
+  `electron-builder` packages are not used. `package.json` carries `"overwolf": { "packages": [] }` (`gep` and
+  `overlay` are added when phase 7 needs them). Electron 44 reportedly reaches end of life around March 2027; the
+  app follows ow-electron's versions.
 - **TypeScript 6.0.3, not 7.** Version 7 is the new native compiler and the lint tooling does not support it
   yet. The types in `src/shared/types/` compile on both.
 - **SQLite through Node's built-in `node:sqlite`.** There is no native module to rebuild for ow-electron. It
@@ -91,7 +93,7 @@ siegestats/
   fallback behind the same interface.
 - **App icon.** `resources/` holds the icon set (`npm run icons` regenerates it from `icon.svg`). The main
   process loads `resources/icon.png` / `icon.ico` at run time, so the phase 6 installer must ship `resources/`
-  (electron-builder `extraResources` or `asarUnpack`).
+  (`electron-builder.yml` lists it under `files`).
 - **Windows installer built by GitHub Actions.** On Linux the build got as far as the unpacked app, then the
   installer step failed for lack of Wine.
 
@@ -155,10 +157,23 @@ siegestats/
 6. **Does that rule cover Overwolf itself?** (before phase 7). The app's own code will only call Overwolf's
    official events API. How Overwolf collects those events from the game is not documented anywhere that
    could be read. Default: "our code never does it" is what the rule means.
-7. **"No telemetry unless I opt in" vs ow-electron** (phase 7). Verified: ow-electron sends anonymous
-   analytics by default, and the switch-off call must be made at every launch. The app will make it unless
-   the user opts in. The uninstaller Overwolf's build tool generates also sends one uninstall ping, and no
-   switch for it was found. Default: disclose that on the About screen. The app has no telemetry of its own.
+7. **"No telemetry unless I opt in" vs ow-electron.** Measured on ow-electron 44.9.0 (now the app's runtime):
+   - **Answer (owner): (a) accept the runtime's traffic and disclose it.** Nothing is blocked; the About screen
+     discloses it, and the e2e test allows exactly these Overwolf hosts and fails on any other.
+   - The app switches Overwolf's anonymous analytics off on every launch unless the user opts in
+     (`src/main/runtime/overwolf/privacy.ts`; the call is not remembered between launches).
+   - Even so, the runtime connects at start-up, before the window appears, to `analyticsnew.overwolf.com`,
+     `tracking.overwolf.com`, `features.overwolf.com` and `content.overwolf.com`. The opt-out removes two of the
+     four `analyticsnew` connections; the rest remain. Payloads are encrypted and could not be inspected.
+   - Overwolf's consent component (CMP) also opens a hidden window for a moment at start-up to store a consent
+     cookie. The app now quits when its own window closes and sends its data only to its own windows.
+   - These requests go through the app's default session, so app code could block them. Whether Overwolf
+     permits that, and whether the runtime still works without them, is unknown.
+   - The uninstaller Overwolf's builder generates also sends one uninstall ping; no switch for it was found.
+   - Question for the owner: (a) accept the runtime's traffic and disclose it (current default: the About
+     screen says so, and an e2e test fails if anything else is contacted), (b) block Overwolf's analytics and
+     tracking hosts unless the user opts in, at the risk of breaking Overwolf's terms or approval, or (c) ask
+     Overwolf first.
 8. **Where real stats come from.** If a backend API already exists, it should be shared now.
    - **Answer (owner): a backend probably exists; its API description is still to come.** Phase 2 is built
      on MockProvider and these types either way; LiveProvider (phase 7) translates the backend's responses
@@ -299,5 +314,5 @@ Someone with Windows and the game has to run a build that records the events and
 - How often events are down. They were reportedly switched off from December 2025 to February 2026 after
   Ubisoft asked Overwolf to change how they are gathered. The app reads Overwolf's status feed and shows
   "connection failed" or a degraded notice instead of wrong data.
-- Whether ow-electron accepts the same main-process build and keeps the same data folder as plain Electron.
+- Windows-only ow-electron behaviour (the packaged app was run on Linux only).
 - Tray, launch on startup, the global hotkey while the game has focus, Windows notifications and snap layouts.

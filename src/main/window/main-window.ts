@@ -15,6 +15,13 @@ export interface MainWindowOptions {
   backgroundColor: string;
 }
 
+/**
+ * The windows this app created. The Overwolf runtime opens windows of its own (its consent component briefly opens
+ * a hidden one at start-up), so "all windows" is not "the app's windows".
+ */
+const appWindows = new Set<BrowserWindow>();
+export const getAppWindows = (): BrowserWindow[] => [...appWindows].filter((win) => !win.isDestroyed());
+
 /** The frameless main window. Size and position are remembered by Electron's window-state persistence. */
 export function createMainWindow(options: MainWindowOptions): BrowserWindow {
   const win = new BrowserWindow({
@@ -38,6 +45,8 @@ export function createMainWindow(options: MainWindowOptions): BrowserWindow {
     },
   });
 
+  appWindows.add(win);
+  win.on('closed', () => appWindows.delete(win));
   win.once('ready-to-show', () => win.show());
 
   const pushMaximized = (): void => {

@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const require = createRequire(import.meta.url);
-const electronPath = require('electron') as unknown as string;
+// The ow-electron runtime binary (requiring the package returns its path, as the vanilla electron package does).
+const electronPath = require('@overwolf/ow-electron') as string;
 
 export interface LaunchedApp {
   app: ElectronApplication;

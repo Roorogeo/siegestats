@@ -9,16 +9,25 @@
   "author": {
     "name": "Rinkexe"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Roorogeo/siegestats.git"
+  },
   "engines": {
     "node": ">=22.12.0"
   },
+  "overwolf": {
+    "packages": []
+  },
   "scripts": {
-    "postinstall": "install-electron",
+    "postinstall": "install-ow-electron",
     "dev": "electron-vite dev",
     "dev:web": "vite --config vite.web.config.ts",
     "build": "electron-vite build",
     "build:web": "vite build --config vite.web.config.ts",
+    "start": "ow-electron .",
     "preview": "electron-vite preview",
+    "build:win": "npm run build && ow-electron-builder --win --publish=never",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",
@@ -33,6 +42,8 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@overwolf/ow-electron": "44.9.0",
+    "@overwolf/ow-electron-builder": "26.18.2",
     "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.5",
     "@tanstack/react-query": "5.107.1",
@@ -41,7 +52,6 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.3.0",
     "clsx": "2.1.1",
-    "electron": "44.9.3",
     "electron-vite": "6.0.0",
     "eslint": "10.14.0",
     "eslint-plugin-react-hooks": "7.1.1",

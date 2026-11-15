@@ -40,7 +40,21 @@ export default tseslint.config(
   {
     files: ['src/main/**/*.ts'],
     languageOptions: { globals: globals.node },
-    rules: restrict([...UI, '@renderer/*', '**/renderer/**'], 'src/main must not import UI code.'),
+    rules: {
+      ...restrict([...UI, '@renderer/*', '**/renderer/**'], 'src/main must not import UI code.'),
+      // Overwolf's APIs stay behind one boundary so the rest of main does not depend on them.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[property.name='overwolf']",
+          message: 'Only src/main/runtime/** may touch app.overwolf.',
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/main/runtime/**/*.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
   },
   {
     files: ['src/preload/**/*.ts'],

@@ -4,10 +4,8 @@ import { launchApp } from './launch';
 test('starts frameless at a usable size with a locked-down page', async () => {
   const { app, page, close } = await launchApp();
   try {
-    const win = await app.evaluate(({ BrowserWindow }) => {
-      const w = BrowserWindow.getAllWindows()[0]!;
-      return { minimum: w.getMinimumSize(), size: w.getSize() };
-    });
+    // The app's own window: the Overwolf runtime may have a hidden window of its own open at the same time.
+    const win = await (await app.browserWindow(page)).evaluate((w) => ({ minimum: w.getMinimumSize(), size: w.getSize() }));
     expect(win.minimum).toEqual([1100, 700]);
     expect(win.size[0]).toBeGreaterThanOrEqual(1100);
     expect(win.size[1]).toBeGreaterThanOrEqual(700);
@@ -26,7 +24,7 @@ test('starts frameless at a usable size with a locked-down page', async () => {
 
     const info = await page.evaluate(() => window.bridge!.app.getInfo());
     expect(info.name).toBe('Sightline');
-    expect(info.runtime).toBe('electron');
+    expect(info.runtime).toBe('ow-electron');
   } finally {
     await close();
   }

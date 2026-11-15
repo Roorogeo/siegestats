@@ -244,7 +244,7 @@ test('settings sections are links; unknown sections fall back to Themes', async 
 test('About carries the exact Ubisoft disclaimer', async ({ page, appUrl }) => {
   await open(page, appUrl, '/settings/about');
   await expect(page.getByText(DISCLAIMER, { exact: true })).toBeVisible();
-  await expect(page.getByText('sends no telemetry unless you opt in')).toBeVisible();
+  await expect(page.getByText('sends no telemetry of its own unless you opt in')).toBeVisible();
   const about = page.getByRole('region', { name: 'About' });
   await expect(about.getByRole('button', { name: 'Report a bug' })).toBeVisible();
   await expect(about.getByRole('term').filter({ hasText: 'Version' })).toBeVisible();

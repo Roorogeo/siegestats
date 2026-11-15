@@ -7,7 +7,7 @@ import {
   BRIDGE_MANIFEST, IPC_EVENT, IPC_INVOKE, isBridgeCall, isBridgeNamespace, type BridgeNamespace,
 } from '@shared/ipc/manifest';
 import { appError, toAppError } from '@shared/util/errors';
-import { rendererDevUrl } from '../window/main-window';
+import { getAppWindows, rendererDevUrl } from '../window/main-window';
 
 type AnyFn = (...args: unknown[]) => unknown;
 
@@ -69,7 +69,7 @@ export function registerBridge(core: CoreBridge): void {
       const subscribe = (core[ns] as unknown as Record<string, AnyFn>)[name];
       if (typeof subscribe !== 'function') continue;
       subscribe((...payload: unknown[]) => {
-        for (const win of BrowserWindow.getAllWindows()) {
+        for (const win of getAppWindows()) {
           if (!win.isDestroyed()) win.webContents.send(IPC_EVENT, ns, name, payload);
         }
       });

@@ -69,8 +69,14 @@ export function AboutSection() {
         <p className="text-[13px] font-medium text-text">{DISCLAIMER}</p>
         <p className="flex items-start gap-2 text-[12px] text-text-muted">
           <ShieldCheck className="mt-px size-4 shrink-0" aria-hidden />
-          <span>{info.name} sends no telemetry unless you opt in.</span>
+          <span>{info.name} sends no telemetry of its own unless you opt in.</span>
         </p>
+        {info.runtime === 'ow-electron' && (
+          <p className="pl-6 text-[12px] text-text-muted">
+            It runs on Overwolf's Electron runtime, which contacts Overwolf's servers when the app starts. Overwolf's
+            anonymous usage analytics are switched off unless you opt in.
+          </p>
+        )}
       </Card>
 
       <div className="space-y-2">

@@ -27,7 +27,7 @@ test('a theme change applies at once, is saved, and is restored on the next laun
     const second = await launchApp(userData);
     expect(await second.page.evaluate(() => document.documentElement.dataset.theme)).toBe('ember');
     // The window itself is painted in the saved theme before the page loads.
-    const background = await second.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getBackgroundColor());
+    const background = await (await second.app.browserWindow(second.page)).evaluate((w) => w.getBackgroundColor());
     expect(background.toUpperCase()).toBe('#140B08');
     await second.app.close();
   } finally {
@@ -39,12 +39,12 @@ test('window size and position are remembered', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'sightline-e2e-bounds-'));
   try {
     const first = await launchApp(userData);
-    await first.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setBounds({ x: 60, y: 40, width: 1333, height: 777 }));
+    await (await first.app.browserWindow(first.page)).evaluate((w) => w.setBounds({ x: 60, y: 40, width: 1333, height: 777 }));
     await first.page.waitForTimeout(400);
     await first.app.close();
 
     const second = await launchApp(userData);
-    const bounds = await second.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getBounds());
+    const bounds = await (await second.app.browserWindow(second.page)).evaluate((w) => w.getBounds());
     expect(bounds.width).toBe(1333);
     expect(bounds.height).toBe(777);
     await second.app.close();
@@ -63,4 +63,16 @@ test('a second launch focuses the running app instead of opening another', async
   } finally {
     await rm(userData, { recursive: true, force: true });
   }
+});
+
+test('closing the main window quits the app, even while a runtime window is open', async () => {
+  const { app, page } = await launchApp();
+  const exited = new Promise<number | null>((done) => app.process().once('exit', (code) => done(code)));
+  // Stand-in for the Overwolf runtime's own hidden window (its consent component opens one at start-up).
+  await app.evaluate(({ BrowserWindow }) => {
+    new BrowserWindow({ show: false, width: 1, height: 1 });
+  });
+  await (await app.browserWindow(page)).evaluate((w) => w.close());
+  const code = await Promise.race([exited, new Promise<'still running'>((done) => setTimeout(() => done('still running'), 5_000))]);
+  expect(code).toBe(0);
 });

@@ -1,0 +1,28 @@
+# Packaging with Overwolf's builder: `npm run build:win` runs `ow-electron-builder` (never the vanilla
+# electron-builder). Phase 6 completes the installer; this is the minimal working configuration.
+appId: com.rinkexe.sightline
+productName: Sightline
+copyright: Copyright © 2026 Rinkexe
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - out/**
+  - resources/**
+  - package.json
+npmRebuild: false
+win:
+  icon: resources/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-Setup-${version}.${ext}
+overwolf:
+  # Signing needs the Overwolf registration and a code-signing certificate (design.md question 1). Until then
+  # builds are unsigned; with "packages": [] nothing Overwolf-signed is loaded anyway. Set to true when registered.
+  requireSigning: false
+  # Sightline shows no ads.
+  disableAdOptimization: true

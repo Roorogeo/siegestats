@@ -7,6 +7,7 @@ import { resolveActiveTheme } from '@shared/theme';
 import type { AppConfig } from '@shared/types/game-config';
 import { registerBridge } from './ipc/register';
 import { detectRuntime } from './runtime/detect';
+import { applyOverwolfPrivacy } from './runtime/overwolf/privacy';
 import { createElectronSettingsStore } from './settings/electron-settings-store';
 import { systemClock } from './system/clock';
 import { externalLinks } from './system/links';
@@ -25,12 +26,25 @@ if (!app.isPackaged && process.env.SIGHTLINE_USER_DATA) app.setPath('userData', 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  // Before app ready, on every launch: Overwolf's runtime sends anonymous analytics unless told not to.
+  // An unreadable settings file counts as "not opted in".
+  const readOptIn = (): boolean => {
+    try {
+      return normalizeSettings(createElectronSettingsStore().readSync()).privacy.telemetryOptIn;
+    } catch {
+      return false;
+    }
+  };
+  applyOverwolfPrivacy({ analyticsOptIn: readOptIn() });
+
   let mainWindow: BrowserWindow | null = null;
 
   const openMainWindow = (backgroundColor: string): void => {
     mainWindow = createMainWindow({ backgroundColor });
     mainWindow.on('closed', () => {
       mainWindow = null;
+      // Closing the main window quits, even while a runtime-owned window is open (minimize-to-tray is phase 6).
+      app.quit();
     });
   };
 

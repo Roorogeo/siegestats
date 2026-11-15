@@ -9,6 +9,10 @@ See [docs/design.md](docs/design.md) for the structure, the phase plan's open qu
 
 Requires Node 22.12 or newer.
 
+Sightline runs on Overwolf's Electron build, [`@overwolf/ow-electron`](https://www.npmjs.com/package/@overwolf/ow-electron),
+not the vanilla `electron` package, and is packaged with `@overwolf/ow-electron-builder`. `npm install` downloads the
+ow-electron runtime from `content.overwolf.com`.
+
 ```bash
 npm install
 ```
@@ -17,8 +21,10 @@ npm install
 npm run dev
 ```
 
-`npm run dev` starts the Electron app with hot reload. To work on the UI in a plain browser instead
-(same UI, in-page stand-in for the desktop bridge, settings in localStorage):
+`npm run dev` starts the app on ow-electron with hot reload. `npm run build` followed by `npm start` (`ow-electron .`)
+runs the built app. `npm run build:win` packages it with `ow-electron-builder` (unsigned until the app is registered
+with Overwolf; see `electron-builder.yml`). To work on the UI in a plain browser instead (same UI, in-page stand-in
+for the desktop bridge, settings in localStorage):
 
 ```bash
 npm run dev:web
@@ -30,7 +36,7 @@ npm run dev:web
 npm run check
 ```
 
-That runs the type check, lint and unit tests. End-to-end tests drive the real Electron app and the browser build:
+That runs the type check, lint and unit tests. End-to-end tests drive the real app on ow-electron and the browser build:
 
 ```bash
 npm run test:e2e
