@@ -48,15 +48,18 @@ test('Ctrl+K focuses the search from the page, also from another field; Escape c
   await page.keyboard.press('Control+k');
   await expect(search(page)).toBeFocused();
   await expect(search(page)).toHaveAttribute('aria-expanded', 'true');
-  const suggestions = page.getByRole('listbox', { name: 'Search suggestions' });
-  await expect(suggestions).toContainText('Accounts you pin as yours appear here');
-  await expect(suggestions).toContainText('Players you look up appear here');
+  // Nothing pinned, starred or searched yet: one line says what the empty box will list.
+  const hint = page.getByText('Accounts you pin as yours, players you star and players you open are listed here.');
+  await expect(hint).toBeVisible();
 
+  // A real handle, but no generated account carries it: the search answers with its empty state.
   await page.keyboard.type('Pengu');
-  await expect(suggestions).toContainText('Player search arrives in phase 2');
+  const noResults = page.getByText('No players named “Pengu” on PC', { exact: true });
+  await expect(noResults).toBeVisible({ timeout: 10_000 });
 
   await page.keyboard.press('Escape');
-  await expect(suggestions).toBeHidden();
+  await expect(noResults).toBeHidden();
+  await expect(search(page)).toHaveAttribute('aria-expanded', 'false');
   // The combobox pattern: Escape closes the popup and leaves focus in the field.
   await expect(search(page)).toBeFocused();
 
