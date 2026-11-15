@@ -182,7 +182,7 @@ function hex(rng: Random, n: number): string {
 }
 
 /** Where a player's rating pulls their RP over a season. Hidden: only the RP it produces is visible. */
-const targetPoints = (a: MockAccount): number => clamp(2850 + 780 * a.person.skill - (a.family === 'console' ? 80 : 0), 1000, 7000);
+const targetPoints = (a: MockAccount): number => clamp(2900 + 830 * a.person.skill - (a.family === 'console' ? 80 : 0), 1000, 7000);
 
 function simulateMatches(
   rng: Random,
@@ -233,7 +233,8 @@ function simulateMatches(
     const target = targetPoints(a);
     let state = perAccount.get(key);
     if (!state) {
-      const start = ladder ? target - 350 + rng.normal(0, 150) : 5000 + 260 * (a.person.skill - 2) + rng.normal(0, 80);
+      // Season start: a soft reset below where the player belongs (the ladder then pulls them back up).
+      const start = ladder ? target - 250 + rng.normal(0, 150) : 5000 + 260 * (a.person.skill - 2) + rng.normal(0, 80);
       const points = Math.max(floor, Math.round(start));
       state = { matches: 0, points, placed: !ladder, current: { points, rankId: null }, peak: null };
       perAccount.set(key, state);
@@ -481,7 +482,8 @@ function addSummarySeasons(
           roundsWon: Math.round(rounds * (0.5 + (wr - 0.5) * 0.6)),
           damage: Math.round(rounds * (kpr * 118 + 45)),
         };
-        let standing: RankedStanding | null = null;
+        // As in generated seasons: a points playlist always has a standing, with no rank until placements are done.
+        let standing: RankedStanding | null = playlist.points === null ? null : { rank: null, peak: null, topPosition: null };
         if (playlist.points === 'ladder' && m >= PLACEMENT_MATCHES) {
           const system = game.rankSystemFor(season.id);
           const floor = system?.ranks[0]?.minPoints ?? 0;

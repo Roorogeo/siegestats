@@ -80,8 +80,10 @@ function styledHandle(rng: Random): string {
   return handle;
 }
 
-/** A variant of an existing handle, as people make for a second account. */
-export function variantHandle(rng: Random, base: string): string {
-  const variant = rng.chance(0.5) ? `${base}${rng.int(1, 99)}` : `${base.toLowerCase()}_${rng.pick(['ps', 'xb', 'pc', 'alt'])}`;
+const PLATFORM_SUFFIXES: Record<'pc' | 'psn' | 'xbl', readonly string[]> = { pc: ['pc', 'alt'], psn: ['ps', 'psn'], xbl: ['xb', 'xbox'] };
+
+/** A variant of an existing handle, as people make for a second account on another platform. */
+export function variantHandle(rng: Random, base: string, platform: 'pc' | 'psn' | 'xbl'): string {
+  const variant = rng.chance(0.5) ? `${base}${rng.int(1, 99)}` : `${base.toLowerCase()}_${rng.pick(PLATFORM_SUFFIXES[platform])}`;
   return variant.slice(0, 15);
 }

@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { createAppServices } from '@core/app-services';
+import { createManualClock } from '@core/memory/clock';
 import { createMemorySettingsStore } from '@core/memory/settings-store';
+import { loadBundledGameConfig } from '@shared/game-config/bundled';
 import { defaultSettings, MAX_PINNED_ACCOUNTS, normalizeSettings } from '@core/settings/defaults';
 import { applySettingsPatch, createSettingsService } from '@core/settings/service';
 import { defaultThemeSettings, selectTheme, setMatchSystem, themeMatchesQuery, toggleFavoriteTheme } from '@shared/theme';
@@ -128,8 +130,11 @@ describe('app services', () => {
     createAppServices({
       info: { name: 'Sightline', version: '0.0.0', runtime: 'browser', isDev: true },
       config,
+      gameConfig: loadBundledGameConfig(),
+      clock: createManualClock('2026-11-15T12:00:00.000Z'),
       settingsStore: createMemorySettingsStore(),
       links: { open: async (url) => { opened.push(url); } },
+      statsLatencyMs: 0,
     });
 
   test('only configured https links open', async () => {
@@ -144,7 +149,8 @@ describe('app services', () => {
   test('parts that are not built yet say so instead of failing silently', async () => {
     const services = make([]);
     await expect(services.live.getView()).rejects.toMatchObject({ code: 'unsupported' });
-    await expect(services.stats.getProfile({ platform: 'pc', id: 'x' as never })).rejects.toMatchObject({ code: 'unsupported' });
+    await expect(services.trends.get({} as never)).rejects.toMatchObject({ code: 'unsupported' });
+    await expect(services.stats.getProfile({ platform: 'pc', id: 'x' as never })).rejects.toMatchObject({ code: 'not_found' });
     expect(await services.favorites.list()).toEqual([]);
   });
 });

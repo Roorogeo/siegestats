@@ -62,9 +62,11 @@ export function buildBoard(
     if (scope !== 'global' && account.family !== scope) continue;
     const agg = world.seasons.get(account.key)?.get(seasonId);
     if (!agg) continue;
-    const scoped = metric === 'level' ? null : agg.byPlaylist.get(playlist.id);
-    if (metric !== 'level' && !scoped) continue;
-    // 'level' ignores the playlist (design question 25): everyone who played that season is on it.
+    const own = agg.byPlaylist.get(playlist.id);
+    // 'level' ignores the playlist (design question 25): everyone who played that season is on it. A regional board
+    // (Legend Division) still lists only its own players, since its rows need a region.
+    const scoped = metric === 'level' ? null : own;
+    if ((metric !== 'level' || regional) && !own) continue;
     const tally: Tally = scoped ? scoped.tally : agg.overall;
     if (tally.matches === 0) continue;
     const latest = agg.fromMatches ? latestParticipation(world, account, seasonId, metric === 'level' ? null : playlist) : null;
@@ -106,7 +108,7 @@ export function buildBoard(
       winRate: winRate(tally.wins, tally.losses),
       rank: ladderRank(game, world, account, seasonId),
       regionId: regional ? account.legendRegionId : null,
-      regionalPosition: regional ? (scoped?.standing?.topPosition ?? null) : null,
+      regionalPosition: regional ? (own?.standing?.topPosition ?? null) : null,
     });
   }
   rows.sort(byValue);

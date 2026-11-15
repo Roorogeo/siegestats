@@ -104,7 +104,7 @@ export function generateAccounts(rng: Random, game: GameIndex): MockAccount[] {
       const second: Platform =
         platform === 'pc' ? rng.pick<Platform>(['psn', 'xbl']) : rng.chance(0.6) ? 'pc' : platform === 'psn' ? 'xbl' : 'psn';
       const roll = rng.next();
-      let name = roll < 0.5 ? main.ref.name : roll < 0.8 ? variantHandle(rng, main.ref.name) : freshHandle(second);
+      let name = roll < 0.5 ? main.ref.name : roll < 0.8 ? variantHandle(rng, main.ref.name, second) : freshHandle(second);
       if (!free(second, name)) name = freshHandle(second);
       const alt = add(p, second, name, rng.float(0.2, 0.5));
       main.linked.push(alt.key);

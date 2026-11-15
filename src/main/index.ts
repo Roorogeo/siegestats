@@ -2,11 +2,13 @@ import { app, dialog, Menu, nativeTheme, session, type BrowserWindow } from 'ele
 import appConfig from '@config/app.json';
 import { createAppServices } from '@core/app-services';
 import { normalizeSettings } from '@core/settings/defaults';
+import { loadBundledGameConfig } from '@shared/game-config/bundled';
 import { resolveActiveTheme } from '@shared/theme';
 import type { AppConfig } from '@shared/types/game-config';
 import { registerBridge } from './ipc/register';
 import { detectRuntime } from './runtime/detect';
 import { createElectronSettingsStore } from './settings/electron-settings-store';
+import { systemClock } from './system/clock';
 import { externalLinks } from './system/links';
 import { createMainWindow } from './window/main-window';
 
@@ -56,6 +58,8 @@ if (!app.requestSingleInstanceLock()) {
       const core = createAppServices({
         info: { name: app.getName(), version: app.getVersion(), runtime: detectRuntime(), isDev: !app.isPackaged },
         config: appConfig as AppConfig,
+        gameConfig: loadBundledGameConfig(),
+        clock: systemClock,
         settingsStore,
         links: externalLinks,
       });
