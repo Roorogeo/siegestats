@@ -54,7 +54,19 @@ export interface MatchHistorySummary {
   kills: number;
   deaths: number;
   streak: { result: 'win' | 'loss'; length: number } | null; // the current streak
+  /**
+   * The player's points movement inside the period, never added across a season reset or across rank systems:
+   * the summed changes of the matches that carry points in the season of the newest such match. null = no match
+   * in the period carries points.
+   */
   pointsChange: number | null;
+  /** The season pointsChange covers. null when pointsChange is null. */
+  pointsChangeSeasonId: SeasonId | null;
+  /**
+   * Matches per playlist in the period, IGNORING the query's playlist filter, so the filter chips can be labelled
+   * from the first page. Playlists with no match in the period are left out; config order.
+   */
+  periodPlaylists: { playlistId: PlaylistId; matches: number }[];
 }
 
 export interface MatchHistoryPage {

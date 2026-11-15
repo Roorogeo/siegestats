@@ -64,6 +64,10 @@ export interface PlaylistDef {
   /** null = no leaderboard. regionIds [] = one board; otherwise one board per region. */
   leaderboard: { regionIds: RegionId[] } | null;
   liveMatchSupported: boolean; // false -> Live Match shows "mode not supported"
+  /** Round rules the UI labels: overtime when the score reaches at-at, first to roundsToWin. null = no overtime. */
+  overtime: { at: number; roundsToWin: number } | null;
+  /** A single deciding round is played at decidingRoundAt-decidingRoundAt. null = none. */
+  decidingRoundAt: number | null;
   firstSeasonId: SeasonId | null;
   lastSeasonId: SeasonId | null; // null = still running
   externalIds: ExternalIds;
@@ -73,12 +77,21 @@ export interface OperatorDef extends BadgeDef {
   id: OperatorId;
   name: string;
   side: Side | null; // null = playable on both sides
+  /** The season the operator was released. null = before the config's first season. */
+  firstSeasonId: SeasonId | null;
   externalIds: ExternalIds;
 }
 
 export interface MapDef extends BadgeDef {
   id: MapId;
   name: string;
+  /** The season the map was released. null = before the config's first season. */
+  firstSeasonId: SeasonId | null;
+  /**
+   * The kinds of playlist the map is ever played in (not a season's exact pool). null = every kind. Only the mock
+   * uses it, to keep demo matches plausible; real providers report the map that was played.
+   */
+  playlistKinds: PlaylistKind[] | null;
   externalIds: ExternalIds;
 }
 

@@ -84,7 +84,12 @@ describe('getMatches', () => {
     expect([...times].sort((a, b) => b - a)).toEqual(times);
     const second = await provider.getMatches(query({ limit: 7, cursor: (await provider.getMatches(query({ limit: 7 }))).nextCursor }));
     expect(second.summary).toEqual(all.summary);
-    expect(all.summary).toEqual(summarize(items, (id) => game.playlist(id)?.points ?? null));
+    const { periodPlaylists, ...rest } = all.summary;
+    expect(rest).toEqual({ ...summarize(items, (id) => game.playlist(id)?.points ?? null), periodPlaylists: undefined });
+    // Per-playlist counts of the period, in config order, summing to the period total.
+    expect(periodPlaylists.reduce((s, p) => s + p.matches, 0)).toBe(items.length);
+    const order = game.config.playlists.map((p) => p.id);
+    expect(periodPlaylists.map((p) => order.indexOf(p.playlistId))).toEqual(periodPlaylists.map((p) => order.indexOf(p.playlistId)).sort((a, b) => a - b));
   });
 
   test('the summary covers the whole filtered set, not the page', async () => {
@@ -98,8 +103,25 @@ describe('getMatches', () => {
     let streak = 0;
     while (items[streak]?.result === first?.result) streak += 1;
     expect(page.summary.streak).toEqual({ result: first?.result, length: streak });
+    // Points move only inside the newest ranked match's season: a season reset starts the count again.
     const ranked = items.filter((m) => m.playlistId === 'ranked');
-    expect(page.summary.pointsChange).toBe(ranked.reduce((s, m) => s + (m.rankChange?.delta ?? 0), 0));
+    const season = ranked[0]?.seasonId ?? null;
+    expect(page.summary.pointsChangeSeasonId).toBe(season);
+    expect(page.summary.pointsChange).toBe(ranked.filter((m) => m.seasonId === season).reduce((s, m) => s + (m.rankChange?.delta ?? 0), 0));
+  });
+
+  test('a period that spans a season reset counts the newest season only, and the chips ignore the playlist filter', async () => {
+    const period = { kind: 'days', days: 90 } as const;
+    const { items } = await everyPage(query({ period, playlistIds: ['ranked' as PlaylistId], limit: 100 }));
+    const seasons = new Set(items.map((m) => m.seasonId));
+    expect(seasons.size).toBeGreaterThan(1); // the 90-day window crosses the Y11S2 / Y11S3 reset on NOW
+    const page = await provider.getMatches(query({ period, playlistIds: ['ranked' as PlaylistId], limit: 5 }));
+    const newest = items[0]?.seasonId;
+    expect(page.summary.pointsChangeSeasonId).toBe(newest);
+    expect(page.summary.pointsChange).toBe(items.filter((m) => m.seasonId === newest).reduce((s, m) => s + (m.rankChange?.delta ?? 0), 0));
+    const unfiltered = await provider.getMatches(query({ period, limit: 5 }));
+    expect(page.summary.periodPlaylists).toEqual(unfiltered.summary.periodPlaylists);
+    expect(page.summary.periodPlaylists.find((p) => p.playlistId === 'ranked')?.matches).toBe(items.length);
   });
 
   test('playlist chips and the map filter', async () => {
@@ -140,7 +162,7 @@ describe('getMatches', () => {
     expect(items.length).toBeGreaterThan(0);
     expect(items.every((m) => m.seasonId === 'Y11S3')).toBe(true);
     const old = await provider.getMatches(query({ period: { kind: 'season', seasonId: 'Y9S1' as SeasonId } }));
-    expect(old).toEqual({ items: [], nextCursor: null, summary: { matches: 0, wins: 0, losses: 0, kills: 0, deaths: 0, streak: null, pointsChange: null } });
+    expect(old).toEqual({ items: [], nextCursor: null, summary: { matches: 0, wins: 0, losses: 0, kills: 0, deaths: 0, streak: null, pointsChange: null, pointsChangeSeasonId: null, periodPlaylists: [] } });
   });
 
   test('a cursor that is not ours is refused; unknown players and matches are not_found', async () => {

@@ -22,8 +22,16 @@ export interface ExternalIdOf {
 export interface GameIndex {
   readonly config: GameConfig;
   season(id: string): SeasonDef | null;
-  /** The config's currentSeasonId (validated to exist). */
+  /**
+   * The config's currentSeasonId (validated to exist). Only a fallback: code that means "the season in force now"
+   * calls currentSeasonAt(now), so the answer moves at a season start without a config edit.
+   */
   currentSeason(): SeasonDef;
+  /**
+   * The season in force at that moment: seasonAt(iso), or currentSeason() when the date is outside every season.
+   * The one rule for "current season" in core, the mock and the renderer.
+   */
+  currentSeasonAt(iso: string): SeasonDef;
   /** The season whose [startsAt, endsAt) contains the date; the last season is open-ended when its endsAt is null. */
   seasonAt(iso: string): SeasonDef | null;
   /** Newest first. */
@@ -101,6 +109,7 @@ export function createGameIndex(config: GameConfig): GameIndex {
     config,
     season: (id) => seasons.get(id) ?? null,
     currentSeason: () => current,
+    currentSeasonAt: (iso) => index.seasonAt(iso) ?? current,
     seasonAt(iso) {
       const t = toMs(iso);
       if (Number.isNaN(t)) return null;

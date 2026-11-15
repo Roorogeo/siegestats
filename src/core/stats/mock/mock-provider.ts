@@ -211,15 +211,18 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
       const fromMs = period !== 'all' && period?.kind === 'days' ? nowMs - intIn(period.days, 1, 3650, 30) * DAY_MS : -Infinity;
       const seasonId = period !== 'all' && period?.kind === 'season' ? period.seasonId : null;
       // Newest first. Participations are in start order and match ids break no ties: two of one account's matches never start together.
-      const list = participations(a)
-        .filter(
-          ({ match }) =>
-            (!playlistIds || playlistIds.has(match.playlist.id)) &&
-            (query.mapId === 'all' || match.map.id === query.mapId) &&
-            match.startMs >= fromMs &&
-            (seasonId === null || match.season.id === seasonId),
-        )
-        .reverse();
+      const inPeriod = participations(a).filter(
+        ({ match }) =>
+          (query.mapId === 'all' || match.map.id === query.mapId) &&
+          match.startMs >= fromMs &&
+          (seasonId === null || match.season.id === seasonId),
+      );
+      const list = inPeriod.filter(({ match }) => !playlistIds || playlistIds.has(match.playlist.id)).reverse();
+      const perPlaylist = new Map<PlaylistId, number>();
+      for (const { match } of inPeriod) perPlaylist.set(match.playlist.id, (perPlaylist.get(match.playlist.id) ?? 0) + 1);
+      const periodPlaylists = game.config.playlists
+        .filter((pl) => perPlaylist.has(pl.id))
+        .map((pl) => ({ playlistId: pl.id, matches: perPlaylist.get(pl.id) ?? 0 }));
 
       let start = 0;
       if (query.cursor !== null && query.cursor !== undefined) {
@@ -234,7 +237,7 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
       const result: MatchHistoryPage = {
         items: page.map(matchSummary),
         nextCursor: last && start + limit < list.length ? encodeCursor(last.match.startMs, last.match.id) : null,
-        summary: summarize(list.map(matchSummary), (id) => game.playlist(id)?.points ?? null),
+        summary: { ...summarize(list.map(matchSummary), (id) => game.playlist(id)?.points ?? null), periodPlaylists },
       };
       return jsonCopy(result);
     },
@@ -317,12 +320,16 @@ function decodeCursor(cursor: unknown): { startMs: number; id: MatchId } | null 
 /**
  * The summary row over the whole filtered list (newest first). The current streak runs from the newest match.
  * pointsChange sums the per-match changes of the Ranked ladder when the list has any, else of a plain-points
- * playlist (Legend Division); points from different systems are never added together.
+ * playlist (Legend Division), and only inside the season of the newest such match: a season reset (and a new rank
+ * system) starts the count again, so points of different seasons or systems are never added together.
+ * periodPlaylists is left empty here; getMatches fills it from the list before the playlist filter.
  */
 export function summarize(items: readonly MatchSummary[], pointsOf: (playlistId: PlaylistId) => 'ladder' | 'plain' | null): MatchHistorySummary {
-  const summary: MatchHistorySummary = { matches: items.length, wins: 0, losses: 0, kills: 0, deaths: 0, streak: null, pointsChange: null };
-  let ladder: number | null = null;
-  let plain: number | null = null;
+  const summary: MatchHistorySummary = {
+    matches: items.length, wins: 0, losses: 0, kills: 0, deaths: 0, streak: null,
+    pointsChange: null, pointsChangeSeasonId: null, periodPlaylists: [],
+  };
+  const sums: Record<'ladder' | 'plain', { seasonId: SeasonId; total: number } | null> = { ladder: null, plain: null };
   for (const m of items) {
     if (m.result === 'win') summary.wins += 1;
     if (m.result === 'loss') summary.losses += 1;
@@ -330,11 +337,17 @@ export function summarize(items: readonly MatchSummary[], pointsOf: (playlistId:
     summary.deaths += m.deaths;
     if (m.rankChange && m.playlistId) {
       const kind = pointsOf(m.playlistId);
-      if (kind === 'ladder') ladder = (ladder ?? 0) + m.rankChange.delta;
-      else if (kind === 'plain') plain = (plain ?? 0) + m.rankChange.delta;
+      if (kind === null) continue;
+      const sum = sums[kind] ?? { seasonId: m.seasonId, total: 0 }; // newest first: the first match fixes the season
+      if (m.seasonId === sum.seasonId) sum.total += m.rankChange.delta;
+      sums[kind] = sum;
     }
   }
-  summary.pointsChange = ladder ?? plain;
+  const counted = sums.ladder ?? sums.plain;
+  if (counted) {
+    summary.pointsChange = counted.total;
+    summary.pointsChangeSeasonId = counted.seasonId;
+  }
   const first = items[0];
   if (first && first.result !== 'draw') {
     let length = 0;

@@ -7,6 +7,8 @@
       "points": "ladder",
       "leaderboard": { "regionIds": [] },
       "liveMatchSupported": true,
+      "overtime": { "at": 3, "roundsToWin": 5 },
+      "decidingRoundAt": null,
       "firstSeasonId": null,
       "lastSeasonId": null,
       "externalIds": { "backend": ["pvp_ranked", "ranked"], "overwolf": ["RANKED", "MATCHMAKING_PVP_RANKED"] }
@@ -18,6 +20,8 @@
       "points": "plain",
       "leaderboard": { "regionIds": ["na", "latam", "emea", "apac", "oce"] },
       "liveMatchSupported": true,
+      "overtime": { "at": 3, "roundsToWin": 5 },
+      "decidingRoundAt": null,
       "firstSeasonId": "Y11S3",
       "lastSeasonId": null,
       "externalIds": { "backend": [], "overwolf": [] }
@@ -29,6 +33,8 @@
       "points": null,
       "leaderboard": null,
       "liveMatchSupported": true,
+      "overtime": null,
+      "decidingRoundAt": 3,
       "firstSeasonId": null,
       "lastSeasonId": null,
       "externalIds": { "backend": ["pvp_standard", "standard", "unranked"], "overwolf": ["UNRANKED", "MATCHMAKING_PVP_UNRANKED"] }
@@ -40,6 +46,8 @@
       "points": null,
       "leaderboard": null,
       "liveMatchSupported": true,
+      "overtime": null,
+      "decidingRoundAt": null,
       "firstSeasonId": null,
       "lastSeasonId": null,
       "externalIds": { "backend": ["pvp_casual", "casual", "quick-match"], "overwolf": ["QUICK MATCH", "MATCHMAKING_PVP_CASUAL"] }
@@ -51,6 +59,8 @@
       "points": null,
       "leaderboard": null,
       "liveMatchSupported": true,
+      "overtime": null,
+      "decidingRoundAt": null,
       "firstSeasonId": null,
       "lastSeasonId": null,
       "externalIds": { "backend": ["pvp_warmup", "arcade"], "overwolf": ["DEATHMATCH", "MATCHMAKING_PVP_ARCADE"] }
@@ -62,6 +72,8 @@
       "points": null,
       "leaderboard": null,
       "liveMatchSupported": true,
+      "overtime": null,
+      "decidingRoundAt": null,
       "firstSeasonId": null,
       "lastSeasonId": null,
       "externalIds": { "backend": ["pvp_event", "event"], "overwolf": ["MATCHMAKING_PVP_EVENT"] }
@@ -73,6 +85,8 @@
       "points": null,
       "leaderboard": null,
       "liveMatchSupported": true,
+      "overtime": null,
+      "decidingRoundAt": null,
       "firstSeasonId": "Y10S2",
       "lastSeasonId": "Y11S1",
       "externalIds": { "backend": ["pvp_living_game_mode", "living_game_mode", "dual_front"], "overwolf": ["DUAL FRONT"] }
@@ -84,6 +98,8 @@
       "points": null,
       "leaderboard": null,
       "liveMatchSupported": false,
+      "overtime": null,
+      "decidingRoundAt": null,
       "firstSeasonId": null,
       "lastSeasonId": null,
       "externalIds": {
@@ -98,6 +114,8 @@
       "points": null,
       "leaderboard": null,
       "liveMatchSupported": false,
+      "overtime": null,
+      "decidingRoundAt": null,
       "firstSeasonId": null,
       "lastSeasonId": null,
       "externalIds": { "backend": [], "overwolf": ["CUSTOM", "CUSTOMGAME_PVP", "CUSTOMGAME_PVP_DEDICATED"] }

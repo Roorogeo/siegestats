@@ -5,6 +5,8 @@
       "name": "Bank",
       "initials": "BA",
       "color": "#935267",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "bank"
@@ -19,6 +21,8 @@
       "name": "Border",
       "initials": "BO",
       "color": "#A79144",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "border"
@@ -33,6 +37,8 @@
       "name": "Calypso Casino",
       "initials": "CC",
       "color": "#72C2B9",
+      "firstSeasonId": "Y11S2",
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "calypsocasino"
@@ -47,6 +53,8 @@
       "name": "Chalet",
       "initials": "CH",
       "color": "#5F639C",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "chalet"
@@ -61,6 +69,8 @@
       "name": "Clubhouse",
       "initials": "CL",
       "color": "#C77880",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "clubhouse"
@@ -76,6 +86,8 @@
       "name": "Coastline",
       "initials": "CO",
       "color": "#B7B579",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "coastline"
@@ -90,6 +102,8 @@
       "name": "Consulate",
       "initials": "CN",
       "color": "#00787D",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "consulate"
@@ -104,6 +118,8 @@
       "name": "Fortress",
       "initials": "FO",
       "color": "#9586CA",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "fortress"
@@ -118,6 +134,8 @@
       "name": "Kafe Dostoyevsky",
       "initials": "KD",
       "color": "#E09E96",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "kafedostoyevsky"
@@ -133,6 +151,8 @@
       "name": "Kanal",
       "initials": "KA",
       "color": "#627031",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "kanal"
@@ -147,6 +167,8 @@
       "name": "Lair",
       "initials": "LA",
       "color": "#35A2B7",
+      "firstSeasonId": "Y8S4",
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "lair"
@@ -161,6 +183,8 @@
       "name": "Nighthaven Labs",
       "initials": "NL",
       "color": "#BEA4DA",
+      "firstSeasonId": "Y7S4",
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "nighthavenlabs"
@@ -176,6 +200,8 @@
       "name": "Oregon",
       "initials": "OR",
       "color": "#955640",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "oregon"
@@ -190,6 +216,8 @@
       "name": "Outback",
       "initials": "OU",
       "color": "#79A05F",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "outback"
@@ -204,6 +232,8 @@
       "name": "Skyscraper",
       "initials": "SK",
       "color": "#78BCD8",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "skyscraper"
@@ -218,6 +248,8 @@
       "name": "Theme Park",
       "initials": "TP",
       "color": "#805789",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "themepark"
@@ -232,6 +264,8 @@
       "name": "Villa",
       "initials": "VI",
       "color": "#C28156",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "villa"
@@ -246,6 +280,13 @@
       "name": "Close Quarter",
       "initials": "CQ",
       "color": "#90BF93",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "closequarter"
@@ -260,6 +301,8 @@
       "name": "Emerald Plains",
       "initials": "EP",
       "color": "#316F97",
+      "firstSeasonId": null,
+      "playlistKinds": null,
       "externalIds": {
         "backend": [
           "emeraldplains"
@@ -274,6 +317,15 @@
       "name": "Favela",
       "initials": "FA",
       "color": "#B77BAC",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "standard",
+        "quick",
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "favela"
@@ -288,6 +340,15 @@
       "name": "Hereford Base",
       "initials": "HB",
       "color": "#D4A77A",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "standard",
+        "quick",
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "herefordbase"
@@ -302,6 +363,15 @@
       "name": "House",
       "initials": "HO",
       "color": "#327957",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "standard",
+        "quick",
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "house"
@@ -316,6 +386,15 @@
       "name": "Presidential Plane",
       "initials": "PP",
       "color": "#6595CE",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "standard",
+        "quick",
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "presidentialplane"
@@ -330,6 +409,13 @@
       "name": "Stadium Alpha",
       "initials": "SA",
       "color": "#D79DBB",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "stadiumalpha"
@@ -345,6 +431,13 @@
       "name": "Stadium Bravo",
       "initials": "SB",
       "color": "#846324",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "stadiumbravo"
@@ -359,6 +452,15 @@
       "name": "Tower",
       "initials": "TO",
       "color": "#44A68D",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "standard",
+        "quick",
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "tower"
@@ -373,6 +475,15 @@
       "name": "Yacht",
       "initials": "YA",
       "color": "#9AB0E5",
+      "firstSeasonId": null,
+      "playlistKinds": [
+        "standard",
+        "quick",
+        "arcade",
+        "event",
+        "training",
+        "custom"
+      ],
       "externalIds": {
         "backend": [
           "yacht"

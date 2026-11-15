@@ -242,12 +242,36 @@ function regions(p: Problems, root: Obj): RegionDef[] {
   return list;
 }
 
+/** A nullable season id that must name a season in the config. */
+function knownSeasonOf(p: Problems, seasonOrder: ReadonlyMap<string, number>, o: Obj, key: string, path: string): SeasonId | null {
+  const value = p.nullableString(o, key, path);
+  if (value === null || value === '') return null;
+  if (!seasonOrder.has(value)) p.add(`${path}.${key}`, `unknown season "${value}"`);
+  return value as SeasonId;
+}
+
+/** A positive integer, or null when the key holds null. */
+function positiveIntOrNull(p: Problems, o: Obj, key: string, path: string): number | null {
+  if (o[key] === null) return null;
+  const v = p.int(o, key, path);
+  if (v < 1) p.add(`${path}.${key}`, 'must be a positive integer or null');
+  return v;
+}
+
+function overtimeOf(p: Problems, o: Obj, path: string): PlaylistDef['overtime'] {
+  const v = o.overtime;
+  if (v === null) return null;
+  if (!isObj(v)) {
+    p.add(`${path}.overtime`, 'must be null or { at, roundsToWin }');
+    return null;
+  }
+  const at = positiveIntOrNull(p, v, 'at', `${path}.overtime`) ?? 0;
+  const roundsToWin = positiveIntOrNull(p, v, 'roundsToWin', `${path}.overtime`) ?? 0;
+  if (roundsToWin <= at) p.add(`${path}.overtime.roundsToWin`, 'must be greater than at');
+  return { at, roundsToWin };
+}
+
 function playlists(p: Problems, root: Obj, seasonOrder: ReadonlyMap<string, number>, regionIds: ReadonlySet<string>): PlaylistDef[] {
-  const knownSeason = (value: string | null, path: string): SeasonId | null => {
-    if (value === null || value === '') return null;
-    if (!seasonOrder.has(value)) p.add(path, `unknown season "${value}"`);
-    return value as SeasonId;
-  };
   const list = p.objects(root, 'playlists', 'config').map(({ item, path }): PlaylistDef => {
     const kind = item.kind as PlaylistKind;
     if (!PLAYLIST_KINDS.includes(kind)) p.add(`${path}.kind`, `must be one of ${PLAYLIST_KINDS.join(', ')} (got ${JSON.stringify(item.kind)})`);
@@ -266,8 +290,11 @@ function playlists(p: Problems, root: Obj, seasonOrder: ReadonlyMap<string, numb
         leaderboard = { regionIds: ids };
       }
     }
-    const firstSeasonId = knownSeason(p.nullableString(item, 'firstSeasonId', path), `${path}.firstSeasonId`);
-    const lastSeasonId = knownSeason(p.nullableString(item, 'lastSeasonId', path), `${path}.lastSeasonId`);
+    const firstSeasonId = knownSeasonOf(p, seasonOrder, item, 'firstSeasonId', path);
+    const lastSeasonId = knownSeasonOf(p, seasonOrder, item, 'lastSeasonId', path);
+    const overtime = overtimeOf(p, item, path);
+    const decidingRoundAt = positiveIntOrNull(p, item, 'decidingRoundAt', path);
+    if (overtime && decidingRoundAt !== null) p.add(`${path}.decidingRoundAt`, 'must be null when overtime is set');
     if (firstSeasonId && lastSeasonId && (seasonOrder.get(firstSeasonId) ?? 0) > (seasonOrder.get(lastSeasonId) ?? 0)) {
       p.add(`${path}.lastSeasonId`, `"${lastSeasonId}" is before firstSeasonId "${firstSeasonId}"`);
     }
@@ -278,6 +305,8 @@ function playlists(p: Problems, root: Obj, seasonOrder: ReadonlyMap<string, numb
       points: points === 'ladder' || points === 'plain' ? points : null,
       leaderboard,
       liveMatchSupported: p.bool(item, 'liveMatchSupported', path),
+      overtime,
+      decidingRoundAt,
       firstSeasonId,
       lastSeasonId,
       externalIds: externalIds(p, item, path),
@@ -287,7 +316,7 @@ function playlists(p: Problems, root: Obj, seasonOrder: ReadonlyMap<string, numb
   return list;
 }
 
-function operators(p: Problems, root: Obj): OperatorDef[] {
+function operators(p: Problems, root: Obj, seasonOrder: ReadonlyMap<string, number>): OperatorDef[] {
   const list = p.objects(root, 'operators', 'config').map(({ item, path }): OperatorDef => {
     const side = item.side;
     if (side !== 'attack' && side !== 'defense' && side !== null) p.add(`${path}.side`, 'must be "attack", "defense" or null');
@@ -295,6 +324,7 @@ function operators(p: Problems, root: Obj): OperatorDef[] {
       id: p.string(item, 'id', path) as OperatorId,
       name: p.string(item, 'name', path),
       side: side === 'attack' || side === 'defense' ? (side as Side) : null,
+      firstSeasonId: knownSeasonOf(p, seasonOrder, item, 'firstSeasonId', path),
       ...badge(p, item, path),
       externalIds: externalIds(p, item, path),
     };
@@ -303,10 +333,23 @@ function operators(p: Problems, root: Obj): OperatorDef[] {
   return list;
 }
 
-function maps(p: Problems, root: Obj): MapDef[] {
+function playlistKindsOf(p: Problems, o: Obj, path: string): PlaylistKind[] | null {
+  if (o.playlistKinds === null) return null;
+  const kinds = p.array(o, 'playlistKinds', path).map((v, i) => {
+    if (!PLAYLIST_KINDS.includes(v as PlaylistKind)) p.add(`${path}.playlistKinds[${i}]`, `must be one of ${PLAYLIST_KINDS.join(', ')}`);
+    return v as PlaylistKind;
+  });
+  if (kinds.length === 0) p.add(`${path}.playlistKinds`, 'must be null (every kind) or list at least one kind');
+  p.unique(kinds, `${path}.playlistKinds`, 'playlist kind');
+  return kinds;
+}
+
+function maps(p: Problems, root: Obj, seasonOrder: ReadonlyMap<string, number>): MapDef[] {
   const list = p.objects(root, 'maps', 'config').map(({ item, path }): MapDef => ({
     id: p.string(item, 'id', path) as MapId,
     name: p.string(item, 'name', path),
+    firstSeasonId: knownSeasonOf(p, seasonOrder, item, 'firstSeasonId', path),
+    playlistKinds: playlistKindsOf(p, item, path),
     ...badge(p, item, path),
     externalIds: externalIds(p, item, path),
   }));
@@ -332,8 +375,8 @@ export function validateGameConfig(raw: unknown): GameConfig {
   const seasonOrder = new Map<string, number>(seasonList.map((s, i) => [s.id, i]));
   const regionList = regions(p, raw);
   const playlistList = playlists(p, raw, seasonOrder, new Set(regionList.map((r) => r.id)));
-  const operatorList = operators(p, raw);
-  const mapList = maps(p, raw);
+  const operatorList = operators(p, raw, seasonOrder);
+  const mapList = maps(p, raw, seasonOrder);
 
   const currentSeasonId = p.string(raw, 'currentSeasonId', 'config') as SeasonId;
   if (currentSeasonId && !seasonOrder.has(currentSeasonId)) p.add('config.currentSeasonId', `unknown season "${currentSeasonId}"`);
