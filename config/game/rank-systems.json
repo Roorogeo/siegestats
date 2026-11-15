@@ -1,0 +1,724 @@
+{
+  "rankSystems": [
+    {
+      "id": "ranked-2",
+      "name": "Ranked 2.0",
+      "tiers": [
+        {
+          "id": "r2.copper",
+          "name": "Copper",
+          "initials": "Cu",
+          "color": "#A4532C"
+        },
+        {
+          "id": "r2.bronze",
+          "name": "Bronze",
+          "initials": "Br",
+          "color": "#8C6A3A"
+        },
+        {
+          "id": "r2.silver",
+          "name": "Silver",
+          "initials": "Si",
+          "color": "#A9B1BA"
+        },
+        {
+          "id": "r2.gold",
+          "name": "Gold",
+          "initials": "Go",
+          "color": "#E2B33C"
+        },
+        {
+          "id": "r2.platinum",
+          "name": "Platinum",
+          "initials": "Pl",
+          "color": "#3DB8B0"
+        },
+        {
+          "id": "r2.emerald",
+          "name": "Emerald",
+          "initials": "Em",
+          "color": "#2E9E58"
+        },
+        {
+          "id": "r2.diamond",
+          "name": "Diamond",
+          "initials": "Di",
+          "color": "#8B6FE2"
+        },
+        {
+          "id": "r2.champions",
+          "name": "Champions",
+          "initials": "Ch",
+          "color": "#D6336C"
+        }
+      ],
+      "ranks": [
+        {
+          "id": "r2.copper-5",
+          "tierId": "r2.copper",
+          "name": "Copper V",
+          "shortName": "C5",
+          "minPoints": 1000,
+          "maxPoints": 1099
+        },
+        {
+          "id": "r2.copper-4",
+          "tierId": "r2.copper",
+          "name": "Copper IV",
+          "shortName": "C4",
+          "minPoints": 1100,
+          "maxPoints": 1199
+        },
+        {
+          "id": "r2.copper-3",
+          "tierId": "r2.copper",
+          "name": "Copper III",
+          "shortName": "C3",
+          "minPoints": 1200,
+          "maxPoints": 1299
+        },
+        {
+          "id": "r2.copper-2",
+          "tierId": "r2.copper",
+          "name": "Copper II",
+          "shortName": "C2",
+          "minPoints": 1300,
+          "maxPoints": 1399
+        },
+        {
+          "id": "r2.copper-1",
+          "tierId": "r2.copper",
+          "name": "Copper I",
+          "shortName": "C1",
+          "minPoints": 1400,
+          "maxPoints": 1499
+        },
+        {
+          "id": "r2.bronze-5",
+          "tierId": "r2.bronze",
+          "name": "Bronze V",
+          "shortName": "B5",
+          "minPoints": 1500,
+          "maxPoints": 1599
+        },
+        {
+          "id": "r2.bronze-4",
+          "tierId": "r2.bronze",
+          "name": "Bronze IV",
+          "shortName": "B4",
+          "minPoints": 1600,
+          "maxPoints": 1699
+        },
+        {
+          "id": "r2.bronze-3",
+          "tierId": "r2.bronze",
+          "name": "Bronze III",
+          "shortName": "B3",
+          "minPoints": 1700,
+          "maxPoints": 1799
+        },
+        {
+          "id": "r2.bronze-2",
+          "tierId": "r2.bronze",
+          "name": "Bronze II",
+          "shortName": "B2",
+          "minPoints": 1800,
+          "maxPoints": 1899
+        },
+        {
+          "id": "r2.bronze-1",
+          "tierId": "r2.bronze",
+          "name": "Bronze I",
+          "shortName": "B1",
+          "minPoints": 1900,
+          "maxPoints": 1999
+        },
+        {
+          "id": "r2.silver-5",
+          "tierId": "r2.silver",
+          "name": "Silver V",
+          "shortName": "S5",
+          "minPoints": 2000,
+          "maxPoints": 2099
+        },
+        {
+          "id": "r2.silver-4",
+          "tierId": "r2.silver",
+          "name": "Silver IV",
+          "shortName": "S4",
+          "minPoints": 2100,
+          "maxPoints": 2199
+        },
+        {
+          "id": "r2.silver-3",
+          "tierId": "r2.silver",
+          "name": "Silver III",
+          "shortName": "S3",
+          "minPoints": 2200,
+          "maxPoints": 2299
+        },
+        {
+          "id": "r2.silver-2",
+          "tierId": "r2.silver",
+          "name": "Silver II",
+          "shortName": "S2",
+          "minPoints": 2300,
+          "maxPoints": 2399
+        },
+        {
+          "id": "r2.silver-1",
+          "tierId": "r2.silver",
+          "name": "Silver I",
+          "shortName": "S1",
+          "minPoints": 2400,
+          "maxPoints": 2499
+        },
+        {
+          "id": "r2.gold-5",
+          "tierId": "r2.gold",
+          "name": "Gold V",
+          "shortName": "G5",
+          "minPoints": 2500,
+          "maxPoints": 2599
+        },
+        {
+          "id": "r2.gold-4",
+          "tierId": "r2.gold",
+          "name": "Gold IV",
+          "shortName": "G4",
+          "minPoints": 2600,
+          "maxPoints": 2699
+        },
+        {
+          "id": "r2.gold-3",
+          "tierId": "r2.gold",
+          "name": "Gold III",
+          "shortName": "G3",
+          "minPoints": 2700,
+          "maxPoints": 2799
+        },
+        {
+          "id": "r2.gold-2",
+          "tierId": "r2.gold",
+          "name": "Gold II",
+          "shortName": "G2",
+          "minPoints": 2800,
+          "maxPoints": 2899
+        },
+        {
+          "id": "r2.gold-1",
+          "tierId": "r2.gold",
+          "name": "Gold I",
+          "shortName": "G1",
+          "minPoints": 2900,
+          "maxPoints": 2999
+        },
+        {
+          "id": "r2.platinum-5",
+          "tierId": "r2.platinum",
+          "name": "Platinum V",
+          "shortName": "P5",
+          "minPoints": 3000,
+          "maxPoints": 3099
+        },
+        {
+          "id": "r2.platinum-4",
+          "tierId": "r2.platinum",
+          "name": "Platinum IV",
+          "shortName": "P4",
+          "minPoints": 3100,
+          "maxPoints": 3199
+        },
+        {
+          "id": "r2.platinum-3",
+          "tierId": "r2.platinum",
+          "name": "Platinum III",
+          "shortName": "P3",
+          "minPoints": 3200,
+          "maxPoints": 3299
+        },
+        {
+          "id": "r2.platinum-2",
+          "tierId": "r2.platinum",
+          "name": "Platinum II",
+          "shortName": "P2",
+          "minPoints": 3300,
+          "maxPoints": 3399
+        },
+        {
+          "id": "r2.platinum-1",
+          "tierId": "r2.platinum",
+          "name": "Platinum I",
+          "shortName": "P1",
+          "minPoints": 3400,
+          "maxPoints": 3499
+        },
+        {
+          "id": "r2.emerald-5",
+          "tierId": "r2.emerald",
+          "name": "Emerald V",
+          "shortName": "E5",
+          "minPoints": 3500,
+          "maxPoints": 3599
+        },
+        {
+          "id": "r2.emerald-4",
+          "tierId": "r2.emerald",
+          "name": "Emerald IV",
+          "shortName": "E4",
+          "minPoints": 3600,
+          "maxPoints": 3699
+        },
+        {
+          "id": "r2.emerald-3",
+          "tierId": "r2.emerald",
+          "name": "Emerald III",
+          "shortName": "E3",
+          "minPoints": 3700,
+          "maxPoints": 3799
+        },
+        {
+          "id": "r2.emerald-2",
+          "tierId": "r2.emerald",
+          "name": "Emerald II",
+          "shortName": "E2",
+          "minPoints": 3800,
+          "maxPoints": 3899
+        },
+        {
+          "id": "r2.emerald-1",
+          "tierId": "r2.emerald",
+          "name": "Emerald I",
+          "shortName": "E1",
+          "minPoints": 3900,
+          "maxPoints": 3999
+        },
+        {
+          "id": "r2.diamond-5",
+          "tierId": "r2.diamond",
+          "name": "Diamond V",
+          "shortName": "D5",
+          "minPoints": 4000,
+          "maxPoints": 4099
+        },
+        {
+          "id": "r2.diamond-4",
+          "tierId": "r2.diamond",
+          "name": "Diamond IV",
+          "shortName": "D4",
+          "minPoints": 4100,
+          "maxPoints": 4199
+        },
+        {
+          "id": "r2.diamond-3",
+          "tierId": "r2.diamond",
+          "name": "Diamond III",
+          "shortName": "D3",
+          "minPoints": 4200,
+          "maxPoints": 4299
+        },
+        {
+          "id": "r2.diamond-2",
+          "tierId": "r2.diamond",
+          "name": "Diamond II",
+          "shortName": "D2",
+          "minPoints": 4300,
+          "maxPoints": 4399
+        },
+        {
+          "id": "r2.diamond-1",
+          "tierId": "r2.diamond",
+          "name": "Diamond I",
+          "shortName": "D1",
+          "minPoints": 4400,
+          "maxPoints": 4499
+        },
+        {
+          "id": "r2.champions",
+          "tierId": "r2.champions",
+          "name": "Champions",
+          "shortName": "CH",
+          "minPoints": 4500,
+          "maxPoints": null
+        }
+      ]
+    },
+    {
+      "id": "ranked-3",
+      "name": "Ranked 3.0",
+      "tiers": [
+        {
+          "id": "r3.copper",
+          "name": "Copper",
+          "initials": "Cu",
+          "color": "#A4532C"
+        },
+        {
+          "id": "r3.bronze",
+          "name": "Bronze",
+          "initials": "Br",
+          "color": "#8C6A3A"
+        },
+        {
+          "id": "r3.silver",
+          "name": "Silver",
+          "initials": "Si",
+          "color": "#A9B1BA"
+        },
+        {
+          "id": "r3.gold",
+          "name": "Gold",
+          "initials": "Go",
+          "color": "#E2B33C"
+        },
+        {
+          "id": "r3.platinum",
+          "name": "Platinum",
+          "initials": "Pl",
+          "color": "#3DB8B0"
+        },
+        {
+          "id": "r3.emerald",
+          "name": "Emerald",
+          "initials": "Em",
+          "color": "#2E9E58"
+        },
+        {
+          "id": "r3.diamond",
+          "name": "Diamond",
+          "initials": "Di",
+          "color": "#8B6FE2"
+        },
+        {
+          "id": "r3.champion",
+          "name": "Champion",
+          "initials": "Ch",
+          "color": "#D6336C"
+        }
+      ],
+      "ranks": [
+        {
+          "id": "r3.copper-5",
+          "tierId": "r3.copper",
+          "name": "Copper V",
+          "shortName": "C5",
+          "minPoints": 1000,
+          "maxPoints": 1099
+        },
+        {
+          "id": "r3.copper-4",
+          "tierId": "r3.copper",
+          "name": "Copper IV",
+          "shortName": "C4",
+          "minPoints": 1100,
+          "maxPoints": 1199
+        },
+        {
+          "id": "r3.copper-3",
+          "tierId": "r3.copper",
+          "name": "Copper III",
+          "shortName": "C3",
+          "minPoints": 1200,
+          "maxPoints": 1299
+        },
+        {
+          "id": "r3.copper-2",
+          "tierId": "r3.copper",
+          "name": "Copper II",
+          "shortName": "C2",
+          "minPoints": 1300,
+          "maxPoints": 1399
+        },
+        {
+          "id": "r3.copper-1",
+          "tierId": "r3.copper",
+          "name": "Copper I",
+          "shortName": "C1",
+          "minPoints": 1400,
+          "maxPoints": 1499
+        },
+        {
+          "id": "r3.bronze-5",
+          "tierId": "r3.bronze",
+          "name": "Bronze V",
+          "shortName": "B5",
+          "minPoints": 1500,
+          "maxPoints": 1599
+        },
+        {
+          "id": "r3.bronze-4",
+          "tierId": "r3.bronze",
+          "name": "Bronze IV",
+          "shortName": "B4",
+          "minPoints": 1600,
+          "maxPoints": 1699
+        },
+        {
+          "id": "r3.bronze-3",
+          "tierId": "r3.bronze",
+          "name": "Bronze III",
+          "shortName": "B3",
+          "minPoints": 1700,
+          "maxPoints": 1799
+        },
+        {
+          "id": "r3.bronze-2",
+          "tierId": "r3.bronze",
+          "name": "Bronze II",
+          "shortName": "B2",
+          "minPoints": 1800,
+          "maxPoints": 1899
+        },
+        {
+          "id": "r3.bronze-1",
+          "tierId": "r3.bronze",
+          "name": "Bronze I",
+          "shortName": "B1",
+          "minPoints": 1900,
+          "maxPoints": 1999
+        },
+        {
+          "id": "r3.silver-5",
+          "tierId": "r3.silver",
+          "name": "Silver V",
+          "shortName": "S5",
+          "minPoints": 2000,
+          "maxPoints": 2099
+        },
+        {
+          "id": "r3.silver-4",
+          "tierId": "r3.silver",
+          "name": "Silver IV",
+          "shortName": "S4",
+          "minPoints": 2100,
+          "maxPoints": 2199
+        },
+        {
+          "id": "r3.silver-3",
+          "tierId": "r3.silver",
+          "name": "Silver III",
+          "shortName": "S3",
+          "minPoints": 2200,
+          "maxPoints": 2299
+        },
+        {
+          "id": "r3.silver-2",
+          "tierId": "r3.silver",
+          "name": "Silver II",
+          "shortName": "S2",
+          "minPoints": 2300,
+          "maxPoints": 2399
+        },
+        {
+          "id": "r3.silver-1",
+          "tierId": "r3.silver",
+          "name": "Silver I",
+          "shortName": "S1",
+          "minPoints": 2400,
+          "maxPoints": 2499
+        },
+        {
+          "id": "r3.gold-5",
+          "tierId": "r3.gold",
+          "name": "Gold V",
+          "shortName": "G5",
+          "minPoints": 2500,
+          "maxPoints": 2599
+        },
+        {
+          "id": "r3.gold-4",
+          "tierId": "r3.gold",
+          "name": "Gold IV",
+          "shortName": "G4",
+          "minPoints": 2600,
+          "maxPoints": 2699
+        },
+        {
+          "id": "r3.gold-3",
+          "tierId": "r3.gold",
+          "name": "Gold III",
+          "shortName": "G3",
+          "minPoints": 2700,
+          "maxPoints": 2799
+        },
+        {
+          "id": "r3.gold-2",
+          "tierId": "r3.gold",
+          "name": "Gold II",
+          "shortName": "G2",
+          "minPoints": 2800,
+          "maxPoints": 2899
+        },
+        {
+          "id": "r3.gold-1",
+          "tierId": "r3.gold",
+          "name": "Gold I",
+          "shortName": "G1",
+          "minPoints": 2900,
+          "maxPoints": 2999
+        },
+        {
+          "id": "r3.platinum-5",
+          "tierId": "r3.platinum",
+          "name": "Platinum V",
+          "shortName": "P5",
+          "minPoints": 3000,
+          "maxPoints": 3099
+        },
+        {
+          "id": "r3.platinum-4",
+          "tierId": "r3.platinum",
+          "name": "Platinum IV",
+          "shortName": "P4",
+          "minPoints": 3100,
+          "maxPoints": 3199
+        },
+        {
+          "id": "r3.platinum-3",
+          "tierId": "r3.platinum",
+          "name": "Platinum III",
+          "shortName": "P3",
+          "minPoints": 3200,
+          "maxPoints": 3299
+        },
+        {
+          "id": "r3.platinum-2",
+          "tierId": "r3.platinum",
+          "name": "Platinum II",
+          "shortName": "P2",
+          "minPoints": 3300,
+          "maxPoints": 3399
+        },
+        {
+          "id": "r3.platinum-1",
+          "tierId": "r3.platinum",
+          "name": "Platinum I",
+          "shortName": "P1",
+          "minPoints": 3400,
+          "maxPoints": 3499
+        },
+        {
+          "id": "r3.emerald-5",
+          "tierId": "r3.emerald",
+          "name": "Emerald V",
+          "shortName": "E5",
+          "minPoints": 3500,
+          "maxPoints": 3599
+        },
+        {
+          "id": "r3.emerald-4",
+          "tierId": "r3.emerald",
+          "name": "Emerald IV",
+          "shortName": "E4",
+          "minPoints": 3600,
+          "maxPoints": 3699
+        },
+        {
+          "id": "r3.emerald-3",
+          "tierId": "r3.emerald",
+          "name": "Emerald III",
+          "shortName": "E3",
+          "minPoints": 3700,
+          "maxPoints": 3799
+        },
+        {
+          "id": "r3.emerald-2",
+          "tierId": "r3.emerald",
+          "name": "Emerald II",
+          "shortName": "E2",
+          "minPoints": 3800,
+          "maxPoints": 3899
+        },
+        {
+          "id": "r3.emerald-1",
+          "tierId": "r3.emerald",
+          "name": "Emerald I",
+          "shortName": "E1",
+          "minPoints": 3900,
+          "maxPoints": 3999
+        },
+        {
+          "id": "r3.diamond-5",
+          "tierId": "r3.diamond",
+          "name": "Diamond V",
+          "shortName": "D5",
+          "minPoints": 4000,
+          "maxPoints": 4099
+        },
+        {
+          "id": "r3.diamond-4",
+          "tierId": "r3.diamond",
+          "name": "Diamond IV",
+          "shortName": "D4",
+          "minPoints": 4100,
+          "maxPoints": 4199
+        },
+        {
+          "id": "r3.diamond-3",
+          "tierId": "r3.diamond",
+          "name": "Diamond III",
+          "shortName": "D3",
+          "minPoints": 4200,
+          "maxPoints": 4299
+        },
+        {
+          "id": "r3.diamond-2",
+          "tierId": "r3.diamond",
+          "name": "Diamond II",
+          "shortName": "D2",
+          "minPoints": 4300,
+          "maxPoints": 4399
+        },
+        {
+          "id": "r3.diamond-1",
+          "tierId": "r3.diamond",
+          "name": "Diamond I",
+          "shortName": "D1",
+          "minPoints": 4400,
+          "maxPoints": 4499
+        },
+        {
+          "id": "r3.champion-5",
+          "tierId": "r3.champion",
+          "name": "Champion V",
+          "shortName": "CH5",
+          "minPoints": 4500,
+          "maxPoints": 4599
+        },
+        {
+          "id": "r3.champion-4",
+          "tierId": "r3.champion",
+          "name": "Champion IV",
+          "shortName": "CH4",
+          "minPoints": 4600,
+          "maxPoints": 4699
+        },
+        {
+          "id": "r3.champion-3",
+          "tierId": "r3.champion",
+          "name": "Champion III",
+          "shortName": "CH3",
+          "minPoints": 4700,
+          "maxPoints": 4799
+        },
+        {
+          "id": "r3.champion-2",
+          "tierId": "r3.champion",
+          "name": "Champion II",
+          "shortName": "CH2",
+          "minPoints": 4800,
+          "maxPoints": 4899
+        },
+        {
+          "id": "r3.champion-1",
+          "tierId": "r3.champion",
+          "name": "Champion I",
+          "shortName": "CH1",
+          "minPoints": 4900,
+          "maxPoints": null
+        }
+      ]
+    }
+  ]
+}

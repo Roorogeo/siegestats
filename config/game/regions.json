@@ -1,0 +1,9 @@
+{
+  "regions": [
+    { "id": "na", "name": "North America", "shortName": "NA", "externalIds": { "backend": ["NA"], "overwolf": [] } },
+    { "id": "latam", "name": "Latin America", "shortName": "LATAM", "externalIds": { "backend": ["LATAM"], "overwolf": [] } },
+    { "id": "emea", "name": "Europe/Middle East/Africa", "shortName": "EMEA", "externalIds": { "backend": ["EUMENA", "EMEA"], "overwolf": [] } },
+    { "id": "apac", "name": "Asia-Pacific", "shortName": "APAC", "externalIds": { "backend": ["APAC"], "overwolf": [] } },
+    { "id": "oce", "name": "Oceania", "shortName": "OCE", "externalIds": { "backend": ["OCE"], "overwolf": [] } }
+  ]
+}

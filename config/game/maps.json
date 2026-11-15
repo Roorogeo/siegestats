@@ -1,0 +1,386 @@
+{
+  "maps": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "initials": "BA",
+      "color": "#935267",
+      "externalIds": {
+        "backend": [
+          "bank"
+        ],
+        "overwolf": [
+          "BANK"
+        ]
+      }
+    },
+    {
+      "id": "border",
+      "name": "Border",
+      "initials": "BO",
+      "color": "#A79144",
+      "externalIds": {
+        "backend": [
+          "border"
+        ],
+        "overwolf": [
+          "BORDER"
+        ]
+      }
+    },
+    {
+      "id": "calypso-casino",
+      "name": "Calypso Casino",
+      "initials": "CC",
+      "color": "#72C2B9",
+      "externalIds": {
+        "backend": [
+          "calypsocasino"
+        ],
+        "overwolf": [
+          "CALYPSO CASINO"
+        ]
+      }
+    },
+    {
+      "id": "chalet",
+      "name": "Chalet",
+      "initials": "CH",
+      "color": "#5F639C",
+      "externalIds": {
+        "backend": [
+          "chalet"
+        ],
+        "overwolf": [
+          "CHALET"
+        ]
+      }
+    },
+    {
+      "id": "clubhouse",
+      "name": "Clubhouse",
+      "initials": "CL",
+      "color": "#C77880",
+      "externalIds": {
+        "backend": [
+          "clubhouse"
+        ],
+        "overwolf": [
+          "CLUB HOUSE",
+          "CLUBHOUSE"
+        ]
+      }
+    },
+    {
+      "id": "coastline",
+      "name": "Coastline",
+      "initials": "CO",
+      "color": "#B7B579",
+      "externalIds": {
+        "backend": [
+          "coastline"
+        ],
+        "overwolf": [
+          "COASTLINE"
+        ]
+      }
+    },
+    {
+      "id": "consulate",
+      "name": "Consulate",
+      "initials": "CN",
+      "color": "#00787D",
+      "externalIds": {
+        "backend": [
+          "consulate"
+        ],
+        "overwolf": [
+          "CONSULATE"
+        ]
+      }
+    },
+    {
+      "id": "fortress",
+      "name": "Fortress",
+      "initials": "FO",
+      "color": "#9586CA",
+      "externalIds": {
+        "backend": [
+          "fortress"
+        ],
+        "overwolf": [
+          "FORTRESS"
+        ]
+      }
+    },
+    {
+      "id": "kafe-dostoyevsky",
+      "name": "Kafe Dostoyevsky",
+      "initials": "KD",
+      "color": "#E09E96",
+      "externalIds": {
+        "backend": [
+          "kafedostoyevsky"
+        ],
+        "overwolf": [
+          "KAFE DOSTOYEVSKY",
+          "KAFE"
+        ]
+      }
+    },
+    {
+      "id": "kanal",
+      "name": "Kanal",
+      "initials": "KA",
+      "color": "#627031",
+      "externalIds": {
+        "backend": [
+          "kanal"
+        ],
+        "overwolf": [
+          "KANAL"
+        ]
+      }
+    },
+    {
+      "id": "lair",
+      "name": "Lair",
+      "initials": "LA",
+      "color": "#35A2B7",
+      "externalIds": {
+        "backend": [
+          "lair"
+        ],
+        "overwolf": [
+          "LAIR"
+        ]
+      }
+    },
+    {
+      "id": "nighthaven-labs",
+      "name": "Nighthaven Labs",
+      "initials": "NL",
+      "color": "#BEA4DA",
+      "externalIds": {
+        "backend": [
+          "nighthavenlabs"
+        ],
+        "overwolf": [
+          "NIGHTHAVEN LABS",
+          "NIGHTHAVEN"
+        ]
+      }
+    },
+    {
+      "id": "oregon",
+      "name": "Oregon",
+      "initials": "OR",
+      "color": "#955640",
+      "externalIds": {
+        "backend": [
+          "oregon"
+        ],
+        "overwolf": [
+          "OREGON"
+        ]
+      }
+    },
+    {
+      "id": "outback",
+      "name": "Outback",
+      "initials": "OU",
+      "color": "#79A05F",
+      "externalIds": {
+        "backend": [
+          "outback"
+        ],
+        "overwolf": [
+          "OUTBACK"
+        ]
+      }
+    },
+    {
+      "id": "skyscraper",
+      "name": "Skyscraper",
+      "initials": "SK",
+      "color": "#78BCD8",
+      "externalIds": {
+        "backend": [
+          "skyscraper"
+        ],
+        "overwolf": [
+          "SKYSCRAPER"
+        ]
+      }
+    },
+    {
+      "id": "theme-park",
+      "name": "Theme Park",
+      "initials": "TP",
+      "color": "#805789",
+      "externalIds": {
+        "backend": [
+          "themepark"
+        ],
+        "overwolf": [
+          "THEME PARK"
+        ]
+      }
+    },
+    {
+      "id": "villa",
+      "name": "Villa",
+      "initials": "VI",
+      "color": "#C28156",
+      "externalIds": {
+        "backend": [
+          "villa"
+        ],
+        "overwolf": [
+          "VILLA"
+        ]
+      }
+    },
+    {
+      "id": "close-quarter",
+      "name": "Close Quarter",
+      "initials": "CQ",
+      "color": "#90BF93",
+      "externalIds": {
+        "backend": [
+          "closequarter"
+        ],
+        "overwolf": [
+          "CLOSE QUARTER"
+        ]
+      }
+    },
+    {
+      "id": "emerald-plains",
+      "name": "Emerald Plains",
+      "initials": "EP",
+      "color": "#316F97",
+      "externalIds": {
+        "backend": [
+          "emeraldplains"
+        ],
+        "overwolf": [
+          "EMERALD PLAINS"
+        ]
+      }
+    },
+    {
+      "id": "favela",
+      "name": "Favela",
+      "initials": "FA",
+      "color": "#B77BAC",
+      "externalIds": {
+        "backend": [
+          "favela"
+        ],
+        "overwolf": [
+          "FAVELA"
+        ]
+      }
+    },
+    {
+      "id": "hereford-base",
+      "name": "Hereford Base",
+      "initials": "HB",
+      "color": "#D4A77A",
+      "externalIds": {
+        "backend": [
+          "herefordbase"
+        ],
+        "overwolf": [
+          "HEREFORD BASE"
+        ]
+      }
+    },
+    {
+      "id": "house",
+      "name": "House",
+      "initials": "HO",
+      "color": "#327957",
+      "externalIds": {
+        "backend": [
+          "house"
+        ],
+        "overwolf": [
+          "HOUSE"
+        ]
+      }
+    },
+    {
+      "id": "presidential-plane",
+      "name": "Presidential Plane",
+      "initials": "PP",
+      "color": "#6595CE",
+      "externalIds": {
+        "backend": [
+          "presidentialplane"
+        ],
+        "overwolf": [
+          "PRESIDENTIAL PLANE"
+        ]
+      }
+    },
+    {
+      "id": "stadium-alpha",
+      "name": "Stadium Alpha",
+      "initials": "SA",
+      "color": "#D79DBB",
+      "externalIds": {
+        "backend": [
+          "stadiumalpha"
+        ],
+        "overwolf": [
+          "STADIUM ALPHA",
+          "STADIUM 2020"
+        ]
+      }
+    },
+    {
+      "id": "stadium-bravo",
+      "name": "Stadium Bravo",
+      "initials": "SB",
+      "color": "#846324",
+      "externalIds": {
+        "backend": [
+          "stadiumbravo"
+        ],
+        "overwolf": [
+          "STADIUM BRAVO"
+        ]
+      }
+    },
+    {
+      "id": "tower",
+      "name": "Tower",
+      "initials": "TO",
+      "color": "#44A68D",
+      "externalIds": {
+        "backend": [
+          "tower"
+        ],
+        "overwolf": [
+          "TOWER"
+        ]
+      }
+    },
+    {
+      "id": "yacht",
+      "name": "Yacht",
+      "initials": "YA",
+      "color": "#9AB0E5",
+      "externalIds": {
+        "backend": [
+          "yacht"
+        ],
+        "overwolf": [
+          "YACHT"
+        ]
+      }
+    }
+  ]
+}

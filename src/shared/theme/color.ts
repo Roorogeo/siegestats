@@ -116,6 +116,11 @@ export function ensureContrast(
   return direction === 'lighter' ? '#FFFFFF' : '#000000';
 }
 
+/** Black or white, whichever contrasts more with `background`: the text colour for initials on a badge colour. */
+export function readableTextOn(background: string): HexColor {
+  return contrast('#000000', background) >= contrast('#FFFFFF', background) ? '#000000' : '#FFFFFF';
+}
+
 /** Smallest angle between two hues, 0..180. */
 export const hueDistance = (a: number, b: number): number => {
   const d = Math.abs(a - b) % 360;

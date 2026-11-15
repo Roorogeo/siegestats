@@ -45,7 +45,8 @@ function hotkey(v: unknown, fallback: Hotkey | null): Hotkey | null {
 export const MAX_PINNED_ACCOUNTS = 20;
 const shortString = (v: unknown, max = 128): v is string => typeof v === 'string' && v.length > 0 && v.length <= max;
 
-function playerRef(v: unknown): PinnedAccount['player'] | null {
+/** A PlayerRef rebuilt field by field from untrusted input (settings on disk, a bridge call), or null when it is not one. */
+export function sanitizePlayerRef(v: unknown): PinnedAccount['player'] | null {
   if (!isRecord(v) || !shortString(v.id) || !shortString(v.name) || !PLATFORMS.includes(v.platform as Platform)) return null;
   const avatarUrl = typeof v.avatarUrl === 'string' && /^https:\/\//.test(v.avatarUrl) && v.avatarUrl.length <= 2048 ? v.avatarUrl : null;
   return { platform: v.platform as Platform, id: v.id as PlayerId, name: v.name, avatarUrl };
@@ -58,7 +59,7 @@ function accounts(v: unknown): AccountSettings {
   const seen = new Set<string>();
   for (const entry of v.pinned) {
     if (!isRecord(entry) || typeof entry.pinnedAt !== 'string' || Number.isNaN(Date.parse(entry.pinnedAt))) continue;
-    const player = playerRef(entry.player);
+    const player = sanitizePlayerRef(entry.player);
     const key = player && `${player.platform}:${player.id}`;
     if (!player || !key || seen.has(key)) continue;
     seen.add(key);

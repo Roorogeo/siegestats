@@ -1,0 +1,106 @@
+{
+  "playlists": [
+    {
+      "id": "ranked",
+      "name": "Ranked",
+      "kind": "ranked",
+      "points": "ladder",
+      "leaderboard": { "regionIds": [] },
+      "liveMatchSupported": true,
+      "firstSeasonId": null,
+      "lastSeasonId": null,
+      "externalIds": { "backend": ["pvp_ranked", "ranked"], "overwolf": ["RANKED", "MATCHMAKING_PVP_RANKED"] }
+    },
+    {
+      "id": "legend-division",
+      "name": "Legend Division",
+      "kind": "legend",
+      "points": "plain",
+      "leaderboard": { "regionIds": ["na", "latam", "emea", "apac", "oce"] },
+      "liveMatchSupported": true,
+      "firstSeasonId": "Y11S3",
+      "lastSeasonId": null,
+      "externalIds": { "backend": [], "overwolf": [] }
+    },
+    {
+      "id": "standard",
+      "name": "Standard",
+      "kind": "standard",
+      "points": null,
+      "leaderboard": null,
+      "liveMatchSupported": true,
+      "firstSeasonId": null,
+      "lastSeasonId": null,
+      "externalIds": { "backend": ["pvp_standard", "standard", "unranked"], "overwolf": ["UNRANKED", "MATCHMAKING_PVP_UNRANKED"] }
+    },
+    {
+      "id": "quick-match",
+      "name": "Quick Match",
+      "kind": "quick",
+      "points": null,
+      "leaderboard": null,
+      "liveMatchSupported": true,
+      "firstSeasonId": null,
+      "lastSeasonId": null,
+      "externalIds": { "backend": ["pvp_casual", "casual", "quick-match"], "overwolf": ["QUICK MATCH", "MATCHMAKING_PVP_CASUAL"] }
+    },
+    {
+      "id": "arcade",
+      "name": "Arcade",
+      "kind": "arcade",
+      "points": null,
+      "leaderboard": null,
+      "liveMatchSupported": true,
+      "firstSeasonId": null,
+      "lastSeasonId": null,
+      "externalIds": { "backend": ["pvp_warmup", "arcade"], "overwolf": ["DEATHMATCH", "MATCHMAKING_PVP_ARCADE"] }
+    },
+    {
+      "id": "event",
+      "name": "Event",
+      "kind": "event",
+      "points": null,
+      "leaderboard": null,
+      "liveMatchSupported": true,
+      "firstSeasonId": null,
+      "lastSeasonId": null,
+      "externalIds": { "backend": ["pvp_event", "event"], "overwolf": ["MATCHMAKING_PVP_EVENT"] }
+    },
+    {
+      "id": "dual-front",
+      "name": "Dual Front",
+      "kind": "other",
+      "points": null,
+      "leaderboard": null,
+      "liveMatchSupported": true,
+      "firstSeasonId": "Y10S2",
+      "lastSeasonId": "Y11S1",
+      "externalIds": { "backend": ["pvp_living_game_mode", "living_game_mode", "dual_front"], "overwolf": ["DUAL FRONT"] }
+    },
+    {
+      "id": "training",
+      "name": "Training",
+      "kind": "training",
+      "points": null,
+      "leaderboard": null,
+      "liveMatchSupported": false,
+      "firstSeasonId": null,
+      "lastSeasonId": null,
+      "externalIds": {
+        "backend": [],
+        "overwolf": ["TUTORIAL", "SHOOTING RANGE", "LANDMARK DRILL", "CLEAR HOUSE", "FIELD TRAINING", "OPERATIONS", "MATCHMAKING_PVE", "MATCHMAKING_PVE_LONEWOLF", "MATCHMAKING_PVE_PARTY"]
+      }
+    },
+    {
+      "id": "custom",
+      "name": "Custom Game",
+      "kind": "custom",
+      "points": null,
+      "leaderboard": null,
+      "liveMatchSupported": false,
+      "firstSeasonId": null,
+      "lastSeasonId": null,
+      "externalIds": { "backend": [], "overwolf": ["CUSTOM", "CUSTOMGAME_PVP", "CUSTOMGAME_PVP_DEDICATED"] }
+    }
+  ]
+}

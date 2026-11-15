@@ -1,0 +1,1179 @@
+{
+  "operators": [
+    {
+      "id": "ace",
+      "name": "Ace",
+      "side": "attack",
+      "initials": "AC",
+      "color": "#C14D66",
+      "externalIds": {
+        "backend": [
+          "ace"
+        ],
+        "overwolf": [
+          "ACE"
+        ]
+      }
+    },
+    {
+      "id": "amaru",
+      "name": "Amaru",
+      "side": "attack",
+      "initials": "AM",
+      "color": "#E77B60",
+      "externalIds": {
+        "backend": [
+          "amaru"
+        ],
+        "overwolf": [
+          "AMARU"
+        ]
+      }
+    },
+    {
+      "id": "ash",
+      "name": "Ash",
+      "side": "attack",
+      "initials": "AS",
+      "color": "#F6AB6B",
+      "externalIds": {
+        "backend": [
+          "ash"
+        ],
+        "overwolf": [
+          "ASH"
+        ]
+      }
+    },
+    {
+      "id": "blackbeard",
+      "name": "Blackbeard",
+      "side": "attack",
+      "initials": "BL",
+      "color": "#9A7400",
+      "externalIds": {
+        "backend": [
+          "blackbeard"
+        ],
+        "overwolf": [
+          "BLACKBEARD"
+        ]
+      }
+    },
+    {
+      "id": "blitz",
+      "name": "Blitz",
+      "side": "attack",
+      "initials": "BT",
+      "color": "#A3A629",
+      "externalIds": {
+        "backend": [
+          "blitz"
+        ],
+        "overwolf": [
+          "BLITZ"
+        ]
+      }
+    },
+    {
+      "id": "brava",
+      "name": "Brava",
+      "side": "attack",
+      "initials": "BR",
+      "color": "#9BCF80",
+      "externalIds": {
+        "backend": [
+          "brava"
+        ],
+        "overwolf": [
+          "BRAVA"
+        ]
+      }
+    },
+    {
+      "id": "buck",
+      "name": "Buck",
+      "side": "attack",
+      "initials": "BU",
+      "color": "#C34E53",
+      "externalIds": {
+        "backend": [
+          "buck"
+        ],
+        "overwolf": [
+          "BUCK"
+        ]
+      }
+    },
+    {
+      "id": "capitao",
+      "name": "Capitão",
+      "side": "attack",
+      "initials": "CA",
+      "color": "#E4804E",
+      "externalIds": {
+        "backend": [
+          "capitao"
+        ],
+        "overwolf": [
+          "CAPITÃO",
+          "CAPITAO"
+        ]
+      }
+    },
+    {
+      "id": "deimos",
+      "name": "Deimos",
+      "side": "attack",
+      "initials": "DE",
+      "color": "#EEB062",
+      "externalIds": {
+        "backend": [
+          "deimos"
+        ],
+        "overwolf": [
+          "DEIMOS"
+        ]
+      }
+    },
+    {
+      "id": "dokkaebi",
+      "name": "Dokkaebi",
+      "side": "attack",
+      "initials": "DK",
+      "color": "#8F7900",
+      "externalIds": {
+        "backend": [
+          "dokkaebi"
+        ],
+        "overwolf": [
+          "DOKKAEBI"
+        ]
+      }
+    },
+    {
+      "id": "finka",
+      "name": "Finka",
+      "side": "attack",
+      "initials": "FI",
+      "color": "#91AB3C",
+      "externalIds": {
+        "backend": [
+          "finka"
+        ],
+        "overwolf": [
+          "FINKA"
+        ]
+      }
+    },
+    {
+      "id": "flores",
+      "name": "Flores",
+      "side": "attack",
+      "initials": "FL",
+      "color": "#89D38F",
+      "externalIds": {
+        "backend": [
+          "flores"
+        ],
+        "overwolf": [
+          "FLORES"
+        ]
+      }
+    },
+    {
+      "id": "fuze",
+      "name": "Fuze",
+      "side": "attack",
+      "initials": "FU",
+      "color": "#C3513E",
+      "externalIds": {
+        "backend": [
+          "fuze"
+        ],
+        "overwolf": [
+          "FUZE"
+        ]
+      }
+    },
+    {
+      "id": "glaz",
+      "name": "Glaz",
+      "side": "attack",
+      "initials": "GL",
+      "color": "#DF853C",
+      "externalIds": {
+        "backend": [
+          "glaz"
+        ],
+        "overwolf": [
+          "GLAZ"
+        ]
+      }
+    },
+    {
+      "id": "gridlock",
+      "name": "Gridlock",
+      "side": "attack",
+      "initials": "GR",
+      "color": "#E4B65D",
+      "externalIds": {
+        "backend": [
+          "gridlock"
+        ],
+        "overwolf": [
+          "GRIDLOCK"
+        ]
+      }
+    },
+    {
+      "id": "grim",
+      "name": "Grim",
+      "side": "attack",
+      "initials": "GM",
+      "color": "#837E00",
+      "externalIds": {
+        "backend": [
+          "grim"
+        ],
+        "overwolf": [
+          "GRIM"
+        ]
+      }
+    },
+    {
+      "id": "hibana",
+      "name": "Hibana",
+      "side": "attack",
+      "initials": "HI",
+      "color": "#7DB04E",
+      "externalIds": {
+        "backend": [
+          "hibana"
+        ],
+        "overwolf": [
+          "HIBANA"
+        ]
+      }
+    },
+    {
+      "id": "iana",
+      "name": "Iana",
+      "side": "attack",
+      "initials": "IA",
+      "color": "#FF9FA3",
+      "externalIds": {
+        "backend": [
+          "iana"
+        ],
+        "overwolf": [
+          "IANA"
+        ]
+      }
+    },
+    {
+      "id": "iq",
+      "name": "IQ",
+      "side": "attack",
+      "initials": "IQ",
+      "color": "#C15626",
+      "externalIds": {
+        "backend": [
+          "iq"
+        ],
+        "overwolf": [
+          "IQ"
+        ]
+      }
+    },
+    {
+      "id": "jackal",
+      "name": "Jackal",
+      "side": "attack",
+      "initials": "JA",
+      "color": "#D78B2A",
+      "externalIds": {
+        "backend": [
+          "jackal"
+        ],
+        "overwolf": [
+          "JACKAL"
+        ]
+      }
+    },
+    {
+      "id": "kali",
+      "name": "Kali",
+      "side": "attack",
+      "initials": "KL",
+      "color": "#D9BC5C",
+      "externalIds": {
+        "backend": [
+          "kali"
+        ],
+        "overwolf": [
+          "KALI"
+        ]
+      }
+    },
+    {
+      "id": "lion",
+      "name": "Lion",
+      "side": "attack",
+      "initials": "LI",
+      "color": "#748400",
+      "externalIds": {
+        "backend": [
+          "lion"
+        ],
+        "overwolf": [
+          "LION"
+        ]
+      }
+    },
+    {
+      "id": "maverick",
+      "name": "Maverick",
+      "side": "attack",
+      "initials": "MV",
+      "color": "#66B462",
+      "externalIds": {
+        "backend": [
+          "maverick"
+        ],
+        "overwolf": [
+          "MAVERICK"
+        ]
+      }
+    },
+    {
+      "id": "montagne",
+      "name": "Montagne",
+      "side": "attack",
+      "initials": "MO",
+      "color": "#FFA194",
+      "externalIds": {
+        "backend": [
+          "montagne"
+        ],
+        "overwolf": [
+          "MONTAGNE"
+        ]
+      }
+    },
+    {
+      "id": "nokk",
+      "name": "Nøkk",
+      "side": "attack",
+      "initials": "NO",
+      "color": "#BB5C00",
+      "externalIds": {
+        "backend": [
+          "nokk"
+        ],
+        "overwolf": [
+          "NØKK",
+          "NOKK"
+        ]
+      }
+    },
+    {
+      "id": "nomad",
+      "name": "Nomad",
+      "side": "attack",
+      "initials": "NM",
+      "color": "#CD9219",
+      "externalIds": {
+        "backend": [
+          "nomad"
+        ],
+        "overwolf": [
+          "NOMAD"
+        ]
+      }
+    },
+    {
+      "id": "osa",
+      "name": "Osa",
+      "side": "attack",
+      "initials": "OS",
+      "color": "#CBC160",
+      "externalIds": {
+        "backend": [
+          "osa"
+        ],
+        "overwolf": [
+          "OSA"
+        ]
+      }
+    },
+    {
+      "id": "ram",
+      "name": "Ram",
+      "side": "attack",
+      "initials": "RA",
+      "color": "#5F8A08",
+      "externalIds": {
+        "backend": [
+          "ram"
+        ],
+        "overwolf": [
+          "RAM"
+        ]
+      }
+    },
+    {
+      "id": "rauora",
+      "name": "Rauora",
+      "side": "attack",
+      "initials": "RR",
+      "color": "#E77684",
+      "externalIds": {
+        "backend": [
+          "rauora"
+        ],
+        "overwolf": [
+          "RAUORA"
+        ]
+      }
+    },
+    {
+      "id": "sens",
+      "name": "Sens",
+      "side": "attack",
+      "initials": "SE",
+      "color": "#FFA385",
+      "externalIds": {
+        "backend": [
+          "sens"
+        ],
+        "overwolf": [
+          "SENS"
+        ]
+      }
+    },
+    {
+      "id": "sledge",
+      "name": "Sledge",
+      "side": "attack",
+      "initials": "SL",
+      "color": "#AF6600",
+      "externalIds": {
+        "backend": [
+          "sledge"
+        ],
+        "overwolf": [
+          "SLEDGE"
+        ]
+      }
+    },
+    {
+      "id": "solid-snake",
+      "name": "Solid Snake",
+      "side": "attack",
+      "initials": "SS",
+      "color": "#C19910",
+      "externalIds": {
+        "backend": [
+          "solid_snake"
+        ],
+        "overwolf": [
+          "SOLID SNAKE"
+        ]
+      }
+    },
+    {
+      "id": "striker",
+      "name": "Striker",
+      "side": "attack",
+      "initials": "ST",
+      "color": "#BCC668",
+      "externalIds": {
+        "backend": [
+          "striker"
+        ],
+        "overwolf": [
+          "STRIKER"
+        ]
+      }
+    },
+    {
+      "id": "thatcher",
+      "name": "Thatcher",
+      "side": "attack",
+      "initials": "TH",
+      "color": "#458E2F",
+      "externalIds": {
+        "backend": [
+          "thatcher"
+        ],
+        "overwolf": [
+          "THATCHER"
+        ]
+      }
+    },
+    {
+      "id": "thermite",
+      "name": "Thermite",
+      "side": "attack",
+      "initials": "TR",
+      "color": "#E97872",
+      "externalIds": {
+        "backend": [
+          "thermite"
+        ],
+        "overwolf": [
+          "THERMITE"
+        ]
+      }
+    },
+    {
+      "id": "twitch",
+      "name": "Twitch",
+      "side": "attack",
+      "initials": "TW",
+      "color": "#FCA676",
+      "externalIds": {
+        "backend": [
+          "twitch"
+        ],
+        "overwolf": [
+          "TWITCH"
+        ]
+      }
+    },
+    {
+      "id": "ying",
+      "name": "Ying",
+      "side": "attack",
+      "initials": "YI",
+      "color": "#A46E00",
+      "externalIds": {
+        "backend": [
+          "ying"
+        ],
+        "overwolf": [
+          "YING"
+        ]
+      }
+    },
+    {
+      "id": "zero",
+      "name": "Zero",
+      "side": "attack",
+      "initials": "ZE",
+      "color": "#B39F18",
+      "externalIds": {
+        "backend": [
+          "zero"
+        ],
+        "overwolf": [
+          "ZERO"
+        ]
+      }
+    },
+    {
+      "id": "zofia",
+      "name": "Zofia",
+      "side": "attack",
+      "initials": "ZO",
+      "color": "#ACCB73",
+      "externalIds": {
+        "backend": [
+          "zofia"
+        ],
+        "overwolf": [
+          "ZOFIA"
+        ]
+      }
+    },
+    {
+      "id": "alibi",
+      "name": "Alibi",
+      "side": "defense",
+      "initials": "AL",
+      "color": "#008479",
+      "externalIds": {
+        "backend": [
+          "alibi"
+        ],
+        "overwolf": [
+          "ALIBI"
+        ]
+      }
+    },
+    {
+      "id": "aruni",
+      "name": "Aruni",
+      "side": "defense",
+      "initials": "AR",
+      "color": "#00ABC5",
+      "externalIds": {
+        "backend": [
+          "aruni"
+        ],
+        "overwolf": [
+          "ARUNI"
+        ]
+      }
+    },
+    {
+      "id": "azami",
+      "name": "Azami",
+      "side": "defense",
+      "initials": "AZ",
+      "color": "#78C3FB",
+      "externalIds": {
+        "backend": [
+          "azami"
+        ],
+        "overwolf": [
+          "AZAMI"
+        ]
+      }
+    },
+    {
+      "id": "bandit",
+      "name": "Bandit",
+      "side": "defense",
+      "initials": "BA",
+      "color": "#566BBD",
+      "externalIds": {
+        "backend": [
+          "bandit"
+        ],
+        "overwolf": [
+          "BANDIT"
+        ]
+      }
+    },
+    {
+      "id": "castle",
+      "name": "Castle",
+      "side": "defense",
+      "initials": "CS",
+      "color": "#A585DC",
+      "externalIds": {
+        "backend": [
+          "castle"
+        ],
+        "overwolf": [
+          "CASTLE"
+        ]
+      }
+    },
+    {
+      "id": "caveira",
+      "name": "Caveira",
+      "side": "defense",
+      "initials": "CV",
+      "color": "#E2A1DE",
+      "externalIds": {
+        "backend": [
+          "caveira"
+        ],
+        "overwolf": [
+          "CAVEIRA"
+        ]
+      }
+    },
+    {
+      "id": "clash",
+      "name": "Clash",
+      "side": "defense",
+      "initials": "CL",
+      "color": "#008285",
+      "externalIds": {
+        "backend": [
+          "clash"
+        ],
+        "overwolf": [
+          "CLASH"
+        ]
+      }
+    },
+    {
+      "id": "denari",
+      "name": "Denari",
+      "side": "defense",
+      "initials": "DN",
+      "color": "#00A8D5",
+      "externalIds": {
+        "backend": [
+          "denari"
+        ],
+        "overwolf": [
+          "DENARI"
+        ]
+      }
+    },
+    {
+      "id": "doc",
+      "name": "Doc",
+      "side": "defense",
+      "initials": "DO",
+      "color": "#8ABEFF",
+      "externalIds": {
+        "backend": [
+          "doc"
+        ],
+        "overwolf": [
+          "DOC"
+        ]
+      }
+    },
+    {
+      "id": "echo",
+      "name": "Echo",
+      "side": "defense",
+      "initials": "EC",
+      "color": "#6965BA",
+      "externalIds": {
+        "backend": [
+          "echo"
+        ],
+        "overwolf": [
+          "ECHO"
+        ]
+      }
+    },
+    {
+      "id": "ela",
+      "name": "Ela",
+      "side": "defense",
+      "initials": "EL",
+      "color": "#B37FD2",
+      "externalIds": {
+        "backend": [
+          "ela"
+        ],
+        "overwolf": [
+          "ELA"
+        ]
+      }
+    },
+    {
+      "id": "fenrir",
+      "name": "Fenrir",
+      "side": "defense",
+      "initials": "FE",
+      "color": "#EB9ED0",
+      "externalIds": {
+        "backend": [
+          "fenrir"
+        ],
+        "overwolf": [
+          "FENRIR"
+        ]
+      }
+    },
+    {
+      "id": "frost",
+      "name": "Frost",
+      "side": "defense",
+      "initials": "FR",
+      "color": "#008090",
+      "externalIds": {
+        "backend": [
+          "frost"
+        ],
+        "overwolf": [
+          "FROST"
+        ]
+      }
+    },
+    {
+      "id": "goyo",
+      "name": "Goyo",
+      "side": "defense",
+      "initials": "GO",
+      "color": "#38A2DF",
+      "externalIds": {
+        "backend": [
+          "goyo"
+        ],
+        "overwolf": [
+          "GOYO"
+        ]
+      }
+    },
+    {
+      "id": "jager",
+      "name": "Jäger",
+      "side": "defense",
+      "initials": "JG",
+      "color": "#9CB9FF",
+      "externalIds": {
+        "backend": [
+          "jager"
+        ],
+        "overwolf": [
+          "JÄGER",
+          "JAGER"
+        ]
+      }
+    },
+    {
+      "id": "kaid",
+      "name": "Kaid",
+      "side": "defense",
+      "initials": "KA",
+      "color": "#795FB4",
+      "externalIds": {
+        "backend": [
+          "kaid"
+        ],
+        "overwolf": [
+          "KAID"
+        ]
+      }
+    },
+    {
+      "id": "kapkan",
+      "name": "Kapkan",
+      "side": "defense",
+      "initials": "KP",
+      "color": "#C07BC5",
+      "externalIds": {
+        "backend": [
+          "kapkan"
+        ],
+        "overwolf": [
+          "KAPKAN"
+        ]
+      }
+    },
+    {
+      "id": "lesion",
+      "name": "Lesion",
+      "side": "defense",
+      "initials": "LE",
+      "color": "#53D1CE",
+      "externalIds": {
+        "backend": [
+          "lesion"
+        ],
+        "overwolf": [
+          "LESION"
+        ]
+      }
+    },
+    {
+      "id": "maestro",
+      "name": "Maestro",
+      "side": "defense",
+      "initials": "MA",
+      "color": "#007E9C",
+      "externalIds": {
+        "backend": [
+          "maestro"
+        ],
+        "overwolf": [
+          "MAESTRO"
+        ]
+      }
+    },
+    {
+      "id": "melusi",
+      "name": "Melusi",
+      "side": "defense",
+      "initials": "ME",
+      "color": "#559DE5",
+      "externalIds": {
+        "backend": [
+          "melusi"
+        ],
+        "overwolf": [
+          "MELUSI"
+        ]
+      }
+    },
+    {
+      "id": "mira",
+      "name": "Mira",
+      "side": "defense",
+      "initials": "MI",
+      "color": "#ACB3FF",
+      "externalIds": {
+        "backend": [
+          "mira"
+        ],
+        "overwolf": [
+          "MIRA"
+        ]
+      }
+    },
+    {
+      "id": "mozzie",
+      "name": "Mozzie",
+      "side": "defense",
+      "initials": "MZ",
+      "color": "#875AAB",
+      "externalIds": {
+        "backend": [
+          "mozzie"
+        ],
+        "overwolf": [
+          "MOZZIE"
+        ]
+      }
+    },
+    {
+      "id": "mute",
+      "name": "Mute",
+      "side": "defense",
+      "initials": "MU",
+      "color": "#CA77B6",
+      "externalIds": {
+        "backend": [
+          "mute"
+        ],
+        "overwolf": [
+          "MUTE"
+        ]
+      }
+    },
+    {
+      "id": "noor",
+      "name": "Noor",
+      "side": "defense",
+      "initials": "NR",
+      "color": "#53CFDD",
+      "externalIds": {
+        "backend": [
+          "noor"
+        ],
+        "overwolf": [
+          "NOOR"
+        ]
+      }
+    },
+    {
+      "id": "oryx",
+      "name": "Oryx",
+      "side": "defense",
+      "initials": "OR",
+      "color": "#007BAB",
+      "externalIds": {
+        "backend": [
+          "oryx"
+        ],
+        "overwolf": [
+          "ORYX"
+        ]
+      }
+    },
+    {
+      "id": "pulse",
+      "name": "Pulse",
+      "side": "defense",
+      "initials": "PU",
+      "color": "#6D96E8",
+      "externalIds": {
+        "backend": [
+          "pulse"
+        ],
+        "overwolf": [
+          "PULSE"
+        ]
+      }
+    },
+    {
+      "id": "rook",
+      "name": "Rook",
+      "side": "defense",
+      "initials": "RO",
+      "color": "#BBAEFC",
+      "externalIds": {
+        "backend": [
+          "rook"
+        ],
+        "overwolf": [
+          "ROOK"
+        ]
+      }
+    },
+    {
+      "id": "sentry",
+      "name": "Sentry",
+      "side": "defense",
+      "initials": "SN",
+      "color": "#9355A0",
+      "externalIds": {
+        "backend": [
+          "sentry"
+        ],
+        "overwolf": [
+          "SENTRY"
+        ]
+      }
+    },
+    {
+      "id": "skopos",
+      "name": "Skopós",
+      "side": "defense",
+      "initials": "SK",
+      "color": "#00AFA7",
+      "externalIds": {
+        "backend": [
+          "skopos"
+        ],
+        "overwolf": [
+          "SKOPÓS",
+          "SKOPOS"
+        ]
+      }
+    },
+    {
+      "id": "smoke",
+      "name": "Smoke",
+      "side": "defense",
+      "initials": "SM",
+      "color": "#5ACCE9",
+      "externalIds": {
+        "backend": [
+          "smoke"
+        ],
+        "overwolf": [
+          "SMOKE"
+        ]
+      }
+    },
+    {
+      "id": "solis",
+      "name": "Solis",
+      "side": "defense",
+      "initials": "SO",
+      "color": "#1E76B8",
+      "externalIds": {
+        "backend": [
+          "solis"
+        ],
+        "overwolf": [
+          "SOLIS"
+        ]
+      }
+    },
+    {
+      "id": "tachanka",
+      "name": "Tachanka",
+      "side": "defense",
+      "initials": "TA",
+      "color": "#8290E8",
+      "externalIds": {
+        "backend": [
+          "tachanka"
+        ],
+        "overwolf": [
+          "TACHANKA"
+        ]
+      }
+    },
+    {
+      "id": "thorn",
+      "name": "Thorn",
+      "side": "defense",
+      "initials": "TN",
+      "color": "#CAA9F4",
+      "externalIds": {
+        "backend": [
+          "thorn"
+        ],
+        "overwolf": [
+          "THORN"
+        ]
+      }
+    },
+    {
+      "id": "thunderbird",
+      "name": "Thunderbird",
+      "side": "defense",
+      "initials": "TD",
+      "color": "#9D5292",
+      "externalIds": {
+        "backend": [
+          "thunderbird"
+        ],
+        "overwolf": [
+          "THUNDERBIRD"
+        ]
+      }
+    },
+    {
+      "id": "tubarao",
+      "name": "Tubarão",
+      "side": "defense",
+      "initials": "TU",
+      "color": "#00ADB6",
+      "externalIds": {
+        "backend": [
+          "tubarao"
+        ],
+        "overwolf": [
+          "TUBARÃO",
+          "TUBARAO"
+        ]
+      }
+    },
+    {
+      "id": "valkyrie",
+      "name": "Valkyrie",
+      "side": "defense",
+      "initials": "VA",
+      "color": "#68C8F4",
+      "externalIds": {
+        "backend": [
+          "valkyrie"
+        ],
+        "overwolf": [
+          "VALKYRIE"
+        ]
+      }
+    },
+    {
+      "id": "vigil",
+      "name": "Vigil",
+      "side": "defense",
+      "initials": "VI",
+      "color": "#4071BC",
+      "externalIds": {
+        "backend": [
+          "vigil"
+        ],
+        "overwolf": [
+          "VIGIL"
+        ]
+      }
+    },
+    {
+      "id": "wamai",
+      "name": "Wamai",
+      "side": "defense",
+      "initials": "WA",
+      "color": "#948AE4",
+      "externalIds": {
+        "backend": [
+          "wamai"
+        ],
+        "overwolf": [
+          "WAMAI"
+        ]
+      }
+    },
+    {
+      "id": "warden",
+      "name": "Warden",
+      "side": "defense",
+      "initials": "WR",
+      "color": "#D7A5EA",
+      "externalIds": {
+        "backend": [
+          "warden"
+        ],
+        "overwolf": [
+          "WARDEN"
+        ]
+      }
+    }
+  ]
+}

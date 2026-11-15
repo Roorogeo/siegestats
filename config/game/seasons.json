@@ -1,0 +1,140 @@
+{
+  "seasons": [
+    {
+      "id": "Y7S4",
+      "number": 28,
+      "name": "Operation Solar Raid",
+      "startsAt": "2022-12-06T00:00:00.000Z",
+      "endsAt": "2023-03-07T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y8S1",
+      "number": 29,
+      "name": "Operation Commanding Force",
+      "startsAt": "2023-03-07T00:00:00.000Z",
+      "endsAt": "2023-05-30T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y8S2",
+      "number": 30,
+      "name": "Operation Dread Factor",
+      "startsAt": "2023-05-30T00:00:00.000Z",
+      "endsAt": "2023-08-29T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y8S3",
+      "number": 31,
+      "name": "Operation Heavy Mettle",
+      "startsAt": "2023-08-29T00:00:00.000Z",
+      "endsAt": "2023-11-28T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y8S4",
+      "number": 32,
+      "name": "Operation Deep Freeze",
+      "startsAt": "2023-11-28T00:00:00.000Z",
+      "endsAt": "2024-03-12T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y9S1",
+      "number": 33,
+      "name": "Operation Deadly Omen",
+      "startsAt": "2024-03-12T00:00:00.000Z",
+      "endsAt": "2024-06-11T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y9S2",
+      "number": 34,
+      "name": "Operation New Blood",
+      "startsAt": "2024-06-11T00:00:00.000Z",
+      "endsAt": "2024-09-10T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y9S3",
+      "number": 35,
+      "name": "Operation Twin Shells",
+      "startsAt": "2024-09-10T00:00:00.000Z",
+      "endsAt": "2024-12-03T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y9S4",
+      "number": 36,
+      "name": "Operation Collision Point",
+      "startsAt": "2024-12-03T00:00:00.000Z",
+      "endsAt": "2025-03-04T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y10S1",
+      "number": 37,
+      "name": "Operation Prep Phase",
+      "startsAt": "2025-03-04T00:00:00.000Z",
+      "endsAt": "2025-06-10T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y10S2",
+      "number": 38,
+      "name": "Operation Daybreak",
+      "startsAt": "2025-06-10T00:00:00.000Z",
+      "endsAt": "2025-09-02T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y10S3",
+      "number": 39,
+      "name": "Operation High Stakes",
+      "startsAt": "2025-09-02T00:00:00.000Z",
+      "endsAt": "2025-12-02T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y10S4",
+      "number": 40,
+      "name": "Operation Tenfold Pursuit",
+      "startsAt": "2025-12-02T00:00:00.000Z",
+      "endsAt": "2026-03-03T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y11S1",
+      "number": 41,
+      "name": "Operation Silent Hunt",
+      "startsAt": "2026-03-03T00:00:00.000Z",
+      "endsAt": "2026-06-02T00:00:00.000Z",
+      "rankSystemId": "ranked-2"
+    },
+    {
+      "id": "Y11S2",
+      "number": 42,
+      "name": "Operation System Override",
+      "startsAt": "2026-06-02T00:00:00.000Z",
+      "endsAt": "2026-09-01T00:00:00.000Z",
+      "rankSystemId": "ranked-3"
+    },
+    {
+      "id": "Y11S3",
+      "number": 43,
+      "name": "Operation Split Fire",
+      "startsAt": "2026-09-01T00:00:00.000Z",
+      "endsAt": "2026-12-01T00:00:00.000Z",
+      "rankSystemId": "ranked-3"
+    },
+    {
+      "id": "Y11S4",
+      "number": 44,
+      "name": "Operation Vital Signal",
+      "startsAt": "2026-12-01T00:00:00.000Z",
+      "endsAt": null,
+      "rankSystemId": "ranked-3"
+    }
+  ]
+}
