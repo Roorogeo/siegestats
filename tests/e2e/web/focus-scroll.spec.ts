@@ -26,6 +26,50 @@ const hashOf = (page: Page): string => new URL(page.url()).hash;
 const views = (page: Page) => page.locator('main a[href*="#/match/"]');
 const scrollTop = (page: Page): Promise<number> => page.locator('main').evaluate((main) => main.scrollTop);
 
+/** Whether the focused element, when it is in <main>, shows in <main>'s visible area. */
+const focusInView = (page: Page): Promise<boolean> =>
+  page.evaluate(() => {
+    const active = document.activeElement;
+    const main = document.querySelector('main');
+    if (active === null || main === null || !main.contains(active)) return true;
+    const box = active.getBoundingClientRect();
+    const view = main.getBoundingClientRect();
+    return box.bottom > view.top && box.top < view.bottom;
+  });
+
+/** A point in <main>'s visible area with no control under it. */
+async function blankPoint(page: Page): Promise<{ x: number; y: number }> {
+  const area = await page.locator('main').boundingBox();
+  if (area === null) throw new Error('main has no box');
+  for (let y = area.y + 20; y < area.y + area.height - 10; y += 15) {
+    for (const x of [area.x + area.width - 30, area.x + 12]) {
+      const hit = await page.evaluate(({ x, y }) => {
+        const element = document.elementFromPoint(x, y);
+        if (element === null || document.querySelector('main')?.contains(element) !== true) return 'outside';
+        return element.closest('a, button, input, select, [tabindex], label')?.outerHTML ?? null;
+      }, { x, y });
+      if (hit === null) return { x, y };
+    }
+  }
+  throw new Error('no blank point in view');
+}
+
+/** Leaderboards first, then the profile through the title-bar search, so the profile has an entry before it. */
+async function arriveAtProfile(page: Page, appUrl: string): Promise<string[]> {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(String(error)));
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await page.goto(`${appUrl}/#/leaderboards`);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Leaderboards');
+  await page.keyboard.press('Control+k');
+  await page.keyboard.type(PLAYER.name);
+  await expect(page.getByRole('listbox').getByRole('option', { name: new RegExp(`^${PLAYER.name} Exact`) })).toBeVisible({ timeout: 15_000 });
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(PLAYER.name, { timeout: 15_000 });
+  await expect(views(page).nth(15)).toBeVisible({ timeout: 15_000 });
+  return errors;
+}
+
 test('a click on a blank part of the page leaves the next Tab after the click, where the page is', async ({ page, appUrl }) => {
   const errors = await openProfile(page, appUrl);
   const status = page.getByText(/^Showing 20 of \d+ matches$/);
@@ -150,7 +194,7 @@ test('Back finds the link again by its target when its name moved on while the p
   expect(errors).toEqual([]);
 });
 
-test('Back gives focus to the heading when the control the profile was left from is not there again', async ({ page, appUrl }) => {
+test('Back gives focus to the top of the restored view when the control the profile was left from is not there again', async ({ page, appUrl }) => {
   const errors = await openProfile(page, appUrl);
   const heading = page.getByRole('heading', { level: 1 });
   const link = views(page).nth(15);
@@ -165,9 +209,34 @@ test('Back gives focus to the heading when the control the profile was left from
   await page.keyboard.press('Alt+ArrowLeft');
   await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
   await expect(heading).toHaveText(PLAYER.name);
-  await expect(heading).toBeFocused();
-  await expect(views(page).nth(15)).not.toBeFocused();
   await expect.poll(() => scrollTop(page)).toBe(left);
+  // The h1 holds focus while the page looks for the link; when it gives up, focus goes to what is on screen, not to the
+  // h1 far above the restored view.
+  await expect(heading).not.toBeFocused({ timeout: 5_000 });
+  await expect(views(page).nth(15)).not.toBeFocused();
+  expect(await focusInView(page)).toBe(true);
+  await page.keyboard.press('Tab');
+  expect(await scrollTop(page)).toBeGreaterThan(left - 300);
+  expect(errors).toEqual([]);
+});
+
+test('a Tab pressed while Back still looks for the control goes on from what is on screen', async ({ page, appUrl }) => {
+  const errors = await openProfile(page, appUrl);
+  const heading = page.getByRole('heading', { level: 1 });
+  const link = views(page).nth(15);
+  await link.focus();
+  const left = await scrollTop(page);
+  await link.evaluate((element) => element.setAttribute('role', 'link'));
+
+  await page.keyboard.press('Enter');
+  await expect(heading).toHaveText(/ on /, { timeout: 15_000 });
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await expect.poll(() => scrollTop(page)).toBe(left);
+  await expect(heading).toBeFocused();
+  await page.keyboard.press('Tab');
+  expect(await focusInView(page)).toBe(true);
+  expect(await scrollTop(page)).toBeGreaterThan(left - 300);
   expect(errors).toEqual([]);
 });
 
@@ -253,5 +322,62 @@ test('a click while Back still waits for the page keeps focus where the user put
   await expect(views(page).nth(15)).toBeVisible();
   await expect(link).not.toBeFocused();
   expect(await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 80) ?? null)).toBe(focused);
+  expect(errors).toEqual([]);
+});
+
+test('Forward to a profile left with nothing focused gives focus to what is on screen, not the h1 above it', async ({ page, appUrl }) => {
+  const errors = await arriveAtProfile(page, appUrl);
+  await views(page).nth(15).focus();
+  const left = await scrollTop(page);
+  const point = await blankPoint(page);
+  await page.mouse.click(point.x, point.y);
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe('#/leaderboards');
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await expect.poll(() => scrollTop(page)).toBe(left);
+  expect(await focusInView(page)).toBe(true);
+  await page.keyboard.press('Tab');
+  expect(await scrollTop(page)).toBeGreaterThan(left - 300);
+  expect(errors).toEqual([]);
+});
+
+test('a click in the page while focus is in the title bar forgets the control focus left from', async ({ page, appUrl }) => {
+  const errors = await arriveAtProfile(page, appUrl);
+  await page.locator('main').evaluate((main) => main.scrollTo(0, 0));
+  const tab = page.getByRole('tab', { name: 'Seasons' });
+  await tab.focus();
+  await page.keyboard.press('Control+k');
+  await page.keyboard.press('Escape');
+  // Focus goes from the search field to the document; then the wheel takes the page down.
+  const point = await blankPoint(page);
+  await page.mouse.click(point.x, point.y);
+  await page.mouse.wheel(0, 2000);
+  await expect.poll(() => scrollTop(page)).toBeGreaterThan(1000);
+  const left = await scrollTop(page);
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe('#/leaderboards');
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await expect.poll(() => scrollTop(page)).toBe(left);
+  await expect(tab).not.toBeFocused();
+  expect(await focusInView(page)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('Back to a profile the query cache dropped comes back at the offset it was left at, with the link on screen', async ({ page, appUrl }) => {
+  const errors = await arriveAtProfile(page, appUrl);
+  const link = views(page).nth(15);
+  await link.focus();
+  const left = await scrollTop(page);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/ on /, { timeout: 15_000 });
+  // Away for longer than the query cache keeps the profile, so it loads again, shorter until its data is in.
+  await page.clock.fastForward('06:00');
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await expect(link).toBeFocused({ timeout: 5_000 });
+  await expect.poll(() => scrollTop(page)).toBe(left);
+  expect(await focusInView(page)).toBe(true);
   expect(errors).toEqual([]);
 });

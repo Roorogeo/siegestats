@@ -22,6 +22,10 @@ interface ThemePreviewCardProps {
  * One cell of the picker grid. The whole card is a single button that applies the theme; the favourite star is
  * its sibling (never nested), laid over the card's footer. Name, badges and the star are in the app's own
  * theme, so they read the same on every card; only the miniature is in the previewed theme.
+ *
+ * The button is named from its content, the theme's name, so its name holds the text it draws (label in name).
+ * "In use" says again what aria-pressed says, and the badges are the button's description (aria-describedby, which
+ * reads hidden content too), so both stay out of the name.
  */
 export const ThemePreviewCard = memo(function ThemePreviewCard({
   theme,
@@ -39,7 +43,6 @@ export const ThemePreviewCard = memo(function ThemePreviewCard({
         type="button"
         data-theme-id={theme.id}
         aria-pressed={active}
-        aria-label={theme.name}
         aria-describedby={metaId}
         onClick={() => onSelect(theme)}
         className={cn(
@@ -52,7 +55,7 @@ export const ThemePreviewCard = memo(function ThemePreviewCard({
           <div className="flex items-center gap-1.5">
             <span className="truncate text-[13px] font-medium text-text">{theme.name}</span>
             {active && (
-              <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-medium text-accent-text">
+              <span aria-hidden className="inline-flex shrink-0 items-center gap-1 text-[12px] font-medium text-accent-text">
                 <span aria-hidden className="flex size-4 items-center justify-center rounded-full bg-accent text-on-accent">
                   <Check className="size-3" strokeWidth={3} />
                 </span>
@@ -60,7 +63,7 @@ export const ThemePreviewCard = memo(function ThemePreviewCard({
               </span>
             )}
           </div>
-          <div id={metaId} className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
+          <div id={metaId} aria-hidden className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
             <Badge>
               {theme.mode === 'light' ? <Sun className="size-3" aria-hidden /> : <Moon className="size-3" aria-hidden />}
               {theme.mode === 'light' ? 'Light' : 'Dark'}
