@@ -381,3 +381,150 @@ test('Back to a profile the query cache dropped comes back at the offset it was 
   expect(await focusInView(page)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+/** The focused element: whether it is a focusViewTop anchor, whether it starts in <main>'s view, and its outline. */
+const focused = (page: Page) =>
+  page.evaluate(() => {
+    const active = document.activeElement;
+    const main = document.querySelector('main');
+    if (active === null || main === null) return null;
+    const box = active.getBoundingClientRect();
+    const view = main.getBoundingClientRect();
+    return {
+      tag: active.localName,
+      role: active.getAttribute('role'),
+      anchor: active.hasAttribute('data-focus-anchor'),
+      startsInView: box.top >= view.top && box.top < view.bottom,
+      outline: getComputedStyle(active).outlineStyle,
+    };
+  });
+
+/** Opens the Operators tab and waits until nothing on it is loading, so it has its full height. */
+async function openOperators(page: Page): Promise<void> {
+  await page.getByRole('tab', { name: 'Operators' }).click();
+  await expect(page.getByRole('tabpanel', { name: 'Operators' }).getByRole('table').first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
+  await expect.poll(() => page.locator('main').evaluate((main) => main.scrollHeight - main.clientHeight)).toBeGreaterThan(540);
+}
+
+test('on a profile tab, Back gives focus to what is on screen, not to the tab panel that starts above it', async ({ page, appUrl }) => {
+  const errors = await openProfile(page, appUrl);
+  await openOperators(page);
+  await page.locator('main').evaluate((main) => main.scrollTo(0, 540));
+  const left = await scrollTop(page);
+  expect(left).toBe(540);
+  // Left with nothing focused, for another player picked in the title-bar search.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press('Control+k');
+  await page.keyboard.type('Otter');
+  await expect(page.getByRole('listbox').getByRole('option', { name: /^Otter/ }).first()).toBeVisible({ timeout: 15_000 });
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { level: 1 })).not.toHaveText(PLAYER.name, { timeout: 15_000 });
+
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}?tab=operators`);
+  await expect.poll(() => scrollTop(page)).toBe(left);
+  await expect.poll(async () => (await focused(page))?.startsInView, { timeout: 5_000 }).toBe(true);
+  expect((await focused(page))?.role).not.toBe('tabpanel');
+  await page.keyboard.press('Tab');
+  expect(await scrollTop(page)).toBeGreaterThan(left - 300);
+  expect(errors).toEqual([]);
+});
+
+test('the place focus is left on for the next Tab draws no ring, also after the page re-renders it', async ({ page, appUrl }) => {
+  const errors = await openProfile(page, appUrl);
+  await views(page).first().focus();
+  await page.keyboard.press('Enter');
+  const heading = page.getByRole('heading', { level: 1 });
+  await expect(heading).toHaveText(/ on /, { timeout: 15_000 });
+  await expect(heading).toBeFocused();
+  // Scrolled with focus on the heading, then Back and Forward: the match comes back below its top, with no control
+  // to give focus to, and refetches (a re-render of what is on screen).
+  await page.locator('main').evaluate((main) => main.scrollTo(0, 400));
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect.poll(() => hashOf(page)).toMatch(/^#\/match\//);
+  await expect.poll(() => scrollTop(page)).toBe(400);
+  await expect.poll(async () => (await focused(page))?.anchor, { timeout: 5_000 }).toBe(true);
+  await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
+  const target = await focused(page);
+  expect(target?.anchor).toBe(true);
+  expect(target?.outline).toBe('none');
+  expect(errors).toEqual([]);
+});
+
+test('leaving a page again while Back is still putting it back keeps the place it was first left at', async ({ page, appUrl }) => {
+  const errors = await openProfile(page, appUrl);
+  const heading = page.getByRole('heading', { level: 1 });
+  const link = views(page).nth(15);
+  await link.focus();
+  const left = await scrollTop(page);
+  await page.keyboard.press('Enter');
+  await expect(heading).toHaveText(/ on /, { timeout: 15_000 });
+  // The profile drops out of the query cache, and its data cannot arrive while the clock stands still.
+  await page.clock.fastForward('06:00');
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1_000));
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await expect(views(page)).toHaveCount(0);
+  // Forward again before it loaded, then Back once it can.
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect.poll(() => hashOf(page)).toMatch(/^#\/match\//);
+  await page.clock.resume();
+  await expect(heading).toHaveText(/ on /, { timeout: 15_000 });
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await expect(link).toBeFocused({ timeout: 5_000 });
+  await expect.poll(() => scrollTop(page)).toBe(left);
+  expect(errors).toEqual([]);
+});
+
+test('a Tab from a heading the user scrolled away from goes on from what is on screen', async ({ page, appUrl }) => {
+  const errors = await openProfile(page, appUrl);
+  const heading = page.getByRole('heading', { level: 1 });
+  await views(page).nth(15).focus();
+  await page.keyboard.press('Enter');
+  await expect(heading).toHaveText(/ on /, { timeout: 15_000 });
+  await page.clock.fastForward('06:00');
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1_000));
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await expect(views(page)).toHaveCount(0);
+  await expect(heading).toBeFocused();
+  // A wheel turn hands the page to the user while it is still loading: focus stays on the heading for now.
+  await page.mouse.move(500, 400);
+  await page.mouse.wheel(0, -100);
+  await page.clock.resume();
+  await expect(views(page).nth(15)).toBeVisible({ timeout: 15_000 });
+  // The header's loading heading hands focus on to the profile's own.
+  await expect(heading).toHaveText(PLAYER.name, { timeout: 15_000 });
+  await expect(heading).toBeFocused();
+  await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
+  const top = await scrollTop(page);
+  expect(top).toBeGreaterThan(300);
+  // The heading is far above the view; the next Tab starts from the view, not from the heading.
+  await page.keyboard.press('Tab');
+  expect((await focused(page))?.startsInView).toBe(true);
+  expect(await scrollTop(page)).toBeGreaterThan(top - 300);
+  expect(errors).toEqual([]);
+});
+
+test('Back and Forward between tabs of one profile return to the offset each was left at', async ({ page, appUrl }) => {
+  const errors = await openProfile(page, appUrl);
+  await openOperators(page);
+  await page.mouse.move(600, 400);
+  await page.mouse.wheel(0, 540);
+  await expect.poll(() => scrollTop(page)).toBe(540);
+  // Focus nowhere (as after a click on blank space), then Back to Overview and Forward again.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}`);
+  await expect(page.getByRole('tabpanel', { name: 'Overview' })).toBeVisible();
+  expect(await scrollTop(page)).toBe(0);
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect.poll(() => hashOf(page)).toBe(`#${PROFILE}?tab=operators`);
+  await expect.poll(() => scrollTop(page)).toBe(540);
+  expect(errors).toEqual([]);
+});

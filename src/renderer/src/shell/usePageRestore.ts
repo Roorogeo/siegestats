@@ -77,21 +77,20 @@ function focusLost(main: HTMLElement): boolean {
   return (active.localName === 'h1' && main.contains(active)) || active.matches(':disabled');
 }
 
-/** Makes `element` focusable from code until it loses focus or is clicked, focuses it with no ring, and cleans up. */
+/**
+ * Makes `element` focusable from code until it loses focus or is clicked, focuses it, and cleans up. With `marker` set,
+ * the stylesheet draws no ring on it (styles/index.css): an attribute React does not own, so a re-render of the
+ * element (a new className) keeps it.
+ */
 function focusFor(element: HTMLElement, marker: string | null): void {
   const listening = new AbortController();
-  const ring = !element.classList.contains('outline-none');
   const release = (): void => {
     element.removeAttribute('tabindex');
     if (marker !== null) element.removeAttribute(marker);
-    if (ring && marker !== null) element.classList.remove('outline-none');
     listening.abort();
   };
   element.tabIndex = -1;
-  if (marker !== null) {
-    element.setAttribute(marker, '');
-    if (ring) element.classList.add('outline-none');
-  }
+  if (marker !== null) element.setAttribute(marker, '');
   element.addEventListener('blur', release, { signal: listening.signal });
   // pointerdown comes before the click's focus change: a click on it would otherwise focus it.
   element.addEventListener('pointerdown', release, { signal: listening.signal });
@@ -110,10 +109,14 @@ function focusPage(main: HTMLElement): void {
   if (heading === null || document.activeElement !== heading) focusFor(main, null);
 }
 
+/** Parts of a table that a screen reader announces with no name ("row", "row group"): their cells are used instead. */
+const TABLE_PARTS = new Set(['thead', 'tbody', 'tfoot', 'tr']);
+
 /**
- * Where the next Tab goes on from when Back or Forward restored the page below its top and no control gets focus back:
- * the first element, in page order, that is drawn starting in <main>'s visible area. A control is focused itself; anything else
- * is focusable for the moment (focusFor). The h1 would be above the view, and the next Tab would go back to the top.
+ * Where the next Tab goes on from when the page is shown below its top and no control is to have focus: the first
+ * element, in page order, that is drawn starting in <main>'s visible area. A control is focused itself; anything else is
+ * focusable for the moment (focusFor), even inside a focusable container that starts above the view (a tab panel): the
+ * container would put the next Tab back at its own top. The h1 would be above the view, and so would that Tab.
  */
 function focusViewTop(main: HTMLElement): void {
   if (main.scrollTop <= 0) return focusPage(main);
@@ -124,12 +127,12 @@ function focusViewTop(main: HTMLElement): void {
     const box = node.getBoundingClientRect();
     // Visually hidden text (sr-only: 1px, placed against the window) seems to be in view at any offset; skip it.
     if (box.width <= 1 || box.height <= 1 || box.top < view.top || box.top >= view.bottom) continue;
-    const control = node.closest<HTMLElement>(CONTROL);
-    if (control !== null && main.contains(control)) {
-      control.focus({ preventScroll: true });
-      if (document.activeElement === control) return;
+    if (node.matches(CONTROL)) {
+      node.focus({ preventScroll: true });
+      if (document.activeElement === node) return;
       continue;
     }
+    if (TABLE_PARTS.has(node.localName)) continue;
     focusFor(node, ANCHOR);
     if (document.activeElement === node) return;
   }
@@ -141,13 +144,15 @@ function focusViewTop(main: HTMLElement): void {
  * while the page grows: a page whose data is on its way starts shorter, and scrollTo stops at its end. When focus was
  * lost, it goes back to `control` once the page shows it, the h1 holding it meanwhile.
  *
- * It ends when both are done, after RESTORE_WINDOW_MS, or at the user's first input. Then focus still waiting goes to
- * the top of the view (focusViewTop), and a restored control the page left outside the view is scrolled into it, so
- * the next Tab goes on from what is on screen. A key settles it that way first, so a Tab pressed while the page is
- * loading still starts there; the pointer, a touch or the wheel only ends it: what the user does then decides.
- * Returns the cancel function.
+ * It ends when both are done, after RESTORE_WINDOW_MS, or at the user's first input in the page. Then focus still
+ * waiting goes to the top of the view (focusViewTop), and a restored control the page left outside the view is scrolled
+ * into it, so the next Tab goes on from what is on screen. A key settles it that way first, so a Tab pressed while the
+ * page is loading still starts there; the pointer, a touch or the wheel only ends it: what the user does then decides.
+ * A shortcut (with Ctrl, Alt or Meta, or a modifier alone) is not input in the page: Ctrl+K moves focus to the title
+ * bar, which ends the focus part by itself, and Alt+Left leaves the page, which cancels the restore.
+ * `onEnd` runs once it is over; returns the cancel function.
  */
-function restoreEntry(main: HTMLElement, top: number | null, control: ControlRef | null, moveFocus: boolean): () => void {
+function restoreEntry(main: HTMLElement, top: number | null, control: ControlRef | null, moveFocus: boolean, onEnd: () => void): () => void {
   let scrolled = top === null;
   let focused = !moveFocus;
   const step = (): void => {
@@ -171,6 +176,7 @@ function restoreEntry(main: HTMLElement, top: number | null, control: ControlRef
   // Nothing to wait for: the control is back, or there is none and the offset is.
   if (scrolled && (focused || control === null)) {
     settle();
+    onEnd();
     return () => undefined;
   }
   // The h1 holds focus while the page comes back: a screen reader hears which page it is.
@@ -182,17 +188,28 @@ function restoreEntry(main: HTMLElement, top: number | null, control: ControlRef
     if (scrolled && (focused || control === null)) end(true);
   });
   const timer = window.setTimeout(() => end(true), RESTORE_WINDOW_MS);
+  let over = false;
   const end = (settling: boolean): void => {
+    if (over) return;
+    over = true;
     observer.disconnect();
     window.clearTimeout(timer);
     listening.abort();
     if (settling) settle();
+    onEnd();
   };
   observer.observe(main, { childList: true, subtree: true });
   const options = { capture: true, passive: true, signal: listening.signal };
-  window.addEventListener('keydown', () => end(true), options);
+  window.addEventListener('keydown', (event) => {
+    if (!isShortcut(event)) end(true);
+  }, options);
   for (const type of ['pointerdown', 'touchstart', 'wheel'] as const) window.addEventListener(type, () => end(false), options);
   return () => end(false);
+}
+
+/** A key that is not input in the page: a modifier on its own, or a key pressed with Ctrl, Alt or Meta. */
+function isShortcut(event: KeyboardEvent): boolean {
+  return event.ctrlKey || event.altKey || event.metaKey || ['Control', 'Alt', 'AltGraph', 'Meta', 'Shift', 'CapsLock'].includes(event.key);
 }
 
 /**
@@ -201,7 +218,7 @@ function restoreEntry(main: HTMLElement, top: number | null, control: ControlRef
  * cannot clamp the offset first, and an entry made by a query-string change is recorded even when it never scrolled.
  * Chromium, and so Electron, has the API; elsewhere nothing is recorded and Back opens at the top.
  */
-function useLeftPages(mainRef: RefObject<HTMLElement | null>): RefObject<Map<string, LeftPage>> {
+function useLeftPages(mainRef: RefObject<HTMLElement | null>, restoring: RefObject<string | null>): RefObject<Map<string, LeftPage>> {
   const { key } = useLocation();
   const shown = useRef(key);
   const left = useRef(new Map<string, LeftPage>());
@@ -240,6 +257,9 @@ function useLeftPages(mainRef: RefObject<HTMLElement | null>): RefObject<Map<str
       return element !== null && inView(main, element) ? describeControl(main, element) : null;
     };
     const remember = (): void => {
+      // Left before Back or Forward finished putting it back (its data still on its way): what it was left with is
+      // still the place to return to, not the half-loaded page.
+      if (restoring.current === shown.current) return;
       left.current.set(shown.current, { top: main.scrollTop, focus: focusedControl() });
     };
     main.addEventListener('focusout', track);
@@ -250,7 +270,7 @@ function useLeftPages(mainRef: RefObject<HTMLElement | null>): RefObject<Map<str
       main.removeEventListener('pointerdown', forget);
       window.navigation.removeEventListener('navigate', remember);
     };
-  }, [mainRef]);
+  }, [mainRef, restoring]);
   return left;
 }
 
@@ -258,17 +278,34 @@ function useLeftPages(mainRef: RefObject<HTMLElement | null>): RefObject<Map<str
  * Scroll position and focus across screen changes, for the shell's <main>, the only scroll container (the browser's own
  * scroll handling never applies to it).
  * - A new screen (a new path) opens at the top. A tab or filter change (the query string) keeps the position.
- * - Back and Forward return to the offset the screen was left at, and put focus back on the control that had it
- *   (restoreEntry).
+ * - Back and Forward return to the offset the entry was left at, a tab or filter entry of the same screen included,
+ *   and put focus back on the control that had it (restoreEntry).
  * - Focus moves only when no control has it (focusLost): the element that had it went with the old page, or a search
  *   pick left the field. A control that stays on screen (Back and Forward in the title bar, a tab, a filter) keeps it.
  *   A new screen gives it to its h1.
+ * - A Tab pressed while focus is on what a screen change focused (the h1, <main>, an anchor) and the user has scrolled
+ *   it out of view goes on from the top of the view instead (focusViewTop), not from far above it.
  */
 export function usePageRestore(mainRef: RefObject<HTMLElement | null>): void {
-  const left = useLeftPages(mainRef);
+  /** The key of the entry Back or Forward is still putting back, if any. */
+  const restoring = useRef<string | null>(null);
+  const left = useLeftPages(mainRef, restoring);
   const { pathname, key } = useLocation();
   const navigationType = useNavigationType();
   const shown = useRef({ pathname, key });
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      const main = mainRef.current;
+      const active = document.activeElement;
+      if (event.key !== 'Tab' || event.ctrlKey || event.altKey || event.metaKey || main === null || active === null) return;
+      const placeholder = active === main || active.hasAttribute(ANCHOR) || (active.localName === 'h1' && main.contains(active));
+      if (placeholder && main.scrollTop > 0 && !inView(main, active)) focusViewTop(main);
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [mainRef]);
+
   useLayoutEffect(() => {
     const main = mainRef.current;
     const before = shown.current;
@@ -282,6 +319,10 @@ export function usePageRestore(mainRef: RefObject<HTMLElement | null>): void {
       return;
     }
     const entry = left.current.get(key);
-    return restoreEntry(main, newPath ? (entry?.top ?? 0) : null, entry?.focus ?? null, moveFocus);
+    restoring.current = key;
+    const top = entry?.top ?? (newPath ? 0 : null);
+    return restoreEntry(main, top, entry?.focus ?? null, moveFocus, () => {
+      if (restoring.current === key) restoring.current = null;
+    });
   }, [mainRef, left, pathname, key, navigationType]);
 }
