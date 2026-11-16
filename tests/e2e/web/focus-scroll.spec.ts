@@ -528,3 +528,25 @@ test('Back and Forward between tabs of one profile return to the offset each was
   await expect.poll(() => scrollTop(page)).toBe(540);
   expect(errors).toEqual([]);
 });
+
+for (const offset of [618, 766]) {
+  test(`a Tab from the heading scrolled out of view stops on the first control in view (wheel ${offset})`, async ({ page, appUrl }) => {
+    const errors = await openProfile(page, appUrl);
+    const heading = page.getByRole('heading', { level: 1 });
+    await heading.focus();
+    await page.mouse.move(600, 400);
+    await page.mouse.wheel(0, offset);
+    await expect.poll(() => scrollTop(page)).toBe(offset);
+    // The first control drawn in view at that offset of the seeded account's Overview.
+    const first = page.getByRole('button', { name: offset === 618 ? 'Show 2 more playlists' : 'Show table' });
+    await expect(first).toBeInViewport();
+    await page.keyboard.press('Tab');
+    await expect(first).toBeFocused();
+    expect(await scrollTop(page)).toBe(offset);
+    // Shift+Tab from the heading still goes back up, as from the top of any page.
+    await heading.focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.getByRole('heading', { level: 1 })).not.toBeFocused();
+    expect(errors).toEqual([]);
+  });
+}

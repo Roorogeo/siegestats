@@ -23,8 +23,8 @@ const RESTORE_WINDOW_MS = 3000;
 /** Marks the element focusViewTop made focusable for the moment. */
 const ANCHOR = 'data-focus-anchor';
 
-/** What can have focus of its own. */
-const CONTROL = 'a[href], button, input, select, textarea, summary, [tabindex], [contenteditable="true"]';
+/** A stop of the Tab order. (A negative tabIndex is focus from code only: an h1, a status line, a chart's insides.) */
+const TAB_STOP = 'a[href], button, input, select, textarea, summary, [contenteditable="true"], [tabindex]:not([tabindex^="-"])';
 
 /**
  * The attributes that tell controls apart. A link by its target and role, not its name or text: those can carry a
@@ -114,29 +114,45 @@ const TABLE_PARTS = new Set(['thead', 'tbody', 'tfoot', 'tr']);
 
 /**
  * Where the next Tab goes on from when the page is shown below its top and no control is to have focus: the first
- * element, in page order, that is drawn starting in <main>'s visible area. A control is focused itself; anything else is
+ * element, in page order, that is drawn starting in <main>'s visible area. A Tab stop is focused itself; anything else is
  * focusable for the moment (focusFor), even inside a focusable container that starts above the view (a tab panel): the
  * container would put the next Tab back at its own top. The h1 would be above the view, and so would that Tab.
+ * Says what got focus: a control is where a Tab pressed now should stay (onViewTopTab), an anchor where it starts.
  */
-function focusViewTop(main: HTMLElement): void {
-  if (main.scrollTop <= 0) return focusPage(main);
+function focusViewTop(main: HTMLElement): 'control' | 'anchor' | 'page' {
+  if (main.scrollTop <= 0) {
+    focusPage(main);
+    return 'page';
+  }
   const view = main.getBoundingClientRect();
   const walker = document.createTreeWalker(main, NodeFilter.SHOW_ELEMENT);
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
-    if (!(node instanceof HTMLElement)) continue;
+    // SVG too: a chart's plot is a keyboard stop (role application).
+    if (!(node instanceof HTMLElement || node instanceof SVGElement)) continue;
     const box = node.getBoundingClientRect();
     // Visually hidden text (sr-only: 1px, placed against the window) seems to be in view at any offset; skip it.
     if (box.width <= 1 || box.height <= 1 || box.top < view.top || box.top >= view.bottom) continue;
-    if (node.matches(CONTROL)) {
+    // Focusable from code only: not a Tab stop, and its own tabindex must not be taken away by focusFor's release.
+    if (node.hasAttribute('tabindex') && node.tabIndex < 0) continue;
+    if (node.matches(TAB_STOP)) {
       node.focus({ preventScroll: true });
-      if (document.activeElement === node) return;
+      if (document.activeElement === node) return 'control';
       continue;
     }
-    if (TABLE_PARTS.has(node.localName)) continue;
+    if (!(node instanceof HTMLElement) || TABLE_PARTS.has(node.localName)) continue;
     focusFor(node, ANCHOR);
-    if (document.activeElement === node) return;
+    if (document.activeElement === node) return 'anchor';
   }
   focusPage(main);
+  return 'page';
+}
+
+/**
+ * For a forward Tab that just moved focus to the top of the view: the browser's own Tab would then move past a control
+ * focusViewTop chose, skipping the first control on screen, so it is held there. From an anchor the Tab goes ahead.
+ */
+function onViewTopTab(event: KeyboardEvent, placed: 'control' | 'anchor' | 'page' | null): void {
+  if (placed === 'control' && event.key === 'Tab' && !event.shiftKey) event.preventDefault();
 }
 
 /**
@@ -165,12 +181,13 @@ function restoreEntry(main: HTMLElement, top: number | null, control: ControlRef
       focused = !focusLost(main);
     }
   };
-  const settle = (): void => {
-    if (!focused && focusLost(main)) focusViewTop(main);
+  const settle = (): 'control' | 'anchor' | 'page' | null => {
+    const placed = !focused && focusLost(main) ? focusViewTop(main) : null;
     const active = document.activeElement;
     if (moveFocus && active instanceof HTMLElement && active !== main && main.contains(active) && !inView(main, active)) {
       active.scrollIntoView({ block: 'nearest' });
     }
+    return placed;
   };
   step();
   // Nothing to wait for: the control is back, or there is none and the offset is.
@@ -189,20 +206,22 @@ function restoreEntry(main: HTMLElement, top: number | null, control: ControlRef
   });
   const timer = window.setTimeout(() => end(true), RESTORE_WINDOW_MS);
   let over = false;
-  const end = (settling: boolean): void => {
-    if (over) return;
+  const end = (settling: boolean): 'control' | 'anchor' | 'page' | null => {
+    if (over) return null;
     over = true;
     observer.disconnect();
     window.clearTimeout(timer);
     listening.abort();
-    if (settling) settle();
+    const placed = settling ? settle() : null;
     onEnd();
+    return placed;
   };
   observer.observe(main, { childList: true, subtree: true });
   const options = { capture: true, passive: true, signal: listening.signal };
+  // Not passive: a Tab that settles focus on a control is held there (onViewTopTab).
   window.addEventListener('keydown', (event) => {
-    if (!isShortcut(event)) end(true);
-  }, options);
+    if (!isShortcut(event)) onViewTopTab(event, end(true));
+  }, { capture: true, signal: listening.signal });
   for (const type of ['pointerdown', 'touchstart', 'wheel'] as const) window.addEventListener(type, () => end(false), options);
   return () => end(false);
 }
@@ -284,7 +303,7 @@ function useLeftPages(mainRef: RefObject<HTMLElement | null>, restoring: RefObje
  *   pick left the field. A control that stays on screen (Back and Forward in the title bar, a tab, a filter) keeps it.
  *   A new screen gives it to its h1.
  * - A Tab pressed while focus is on what a screen change focused (the h1, <main>, an anchor) and the user has scrolled
- *   it out of view goes on from the top of the view instead (focusViewTop), not from far above it.
+ *   it out of view goes to the top of the view instead (focusViewTop), not on from far above it.
  */
 export function usePageRestore(mainRef: RefObject<HTMLElement | null>): void {
   /** The key of the entry Back or Forward is still putting back, if any. */
@@ -298,9 +317,10 @@ export function usePageRestore(mainRef: RefObject<HTMLElement | null>): void {
     const onKey = (event: KeyboardEvent): void => {
       const main = mainRef.current;
       const active = document.activeElement;
-      if (event.key !== 'Tab' || event.ctrlKey || event.altKey || event.metaKey || main === null || active === null) return;
+      // Forward only: Shift+Tab from the heading goes back to the tab row, as from any page's top.
+      if (event.key !== 'Tab' || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || main === null || active === null) return;
       const placeholder = active === main || active.hasAttribute(ANCHOR) || (active.localName === 'h1' && main.contains(active));
-      if (placeholder && main.scrollTop > 0 && !inView(main, active)) focusViewTop(main);
+      if (placeholder && main.scrollTop > 0 && !inView(main, active)) onViewTopTab(event, focusViewTop(main));
     };
     window.addEventListener('keydown', onKey, { capture: true });
     return () => window.removeEventListener('keydown', onKey, { capture: true });

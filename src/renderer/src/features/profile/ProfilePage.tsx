@@ -51,10 +51,12 @@ export function ProfilePage() {
   /** Set by the onboarding pick: the search that had focus is gone, and the route stays /profile. */
   const focusHeading = useRef(false);
 
-  // The profile replaced the search box that had focus: move it to the profile's h1, as a screen change would.
+  // The profile replaced the search box that had focus: open it at its top with focus on its h1, as a screen change
+  // would (the route stays /profile, so the shell does not).
   useEffect(() => {
     if (!active || !focusHeading.current) return;
     focusHeading.current = false;
+    document.querySelector('main')?.scrollTo(0, 0);
     document.querySelector<HTMLElement>('main h1')?.focus({ preventScroll: true });
   }, [active]);
 
