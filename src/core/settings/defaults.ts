@@ -1,7 +1,7 @@
 import type { IsoDateTime, Platform, PlayerId } from '@shared/types/primitives';
 import type { AccountSettings, AppSettings, Hotkey, HotkeyAction, PinnedAccount } from '@shared/types/settings';
 import { defaultThemeSettings, normalizeThemeSettings } from '@shared/theme';
-import { playerKeyString } from '@shared/util/player';
+import { playerKeyString, samePlayer } from '@shared/util/player';
 
 const key = (code: string, mods: Partial<Pick<Hotkey, 'ctrl' | 'alt' | 'shift'>> = {}): Hotkey => ({
   code,
@@ -68,10 +68,8 @@ function accounts(v: unknown): AccountSettings {
     if (pinned.length === MAX_PINNED_ACCOUNTS) break;
   }
   const a = v.active;
-  const active =
-    isRecord(a) && pinned.some((p) => p.player.platform === a.platform && p.player.id === a.id)
-      ? { platform: a.platform as Platform, id: a.id as PlayerId }
-      : null;
+  const asked = isRecord(a) ? { platform: a.platform as Platform, id: a.id as PlayerId } : null;
+  const active = asked && pinned.some((p) => samePlayer(p.player, asked)) ? asked : null;
   return { pinned, active };
 }
 

@@ -72,18 +72,53 @@ describe('splitBounded', () => {
 describe('summary-season breakdowns', () => {
   const line: Tally = { matches: 37, wins: 21, losses: 16, kills: 230, deaths: 170, assists: 70, headshots: 101, rounds: 270, roundsWon: 145, damage: 30_000 };
 
+  const ids = ['bank', 'border', 'chalet', 'oregon', 'villa', 'house'] as MapId[];
+
   test('per map: every count adds up to the line, and each map is a believable set of matches', () => {
-    const ids = ['bank', 'border', 'chalet', 'oregon', 'villa', 'house'] as MapId[];
-    const maps = splitOverMaps(createRandom('maps'), line, ids, [1, 1.4, 0.6, 1, 0.8, 0]);
+    const maps = splitOverMaps(createRandom('maps'), line, ids, [1, 1.4, 0.6, 1, 0.8, 0], { min: 4, max: 9 });
     expect(maps.has('house' as MapId)).toBe(false);
     for (const key of Object.keys(line) as (keyof Tally)[]) expect(sum([...maps.values()].map((t) => t[key])), key).toBe(line[key]);
     for (const t of maps.values()) {
       expect(t.matches).toBeGreaterThan(0);
       expect(t.wins + t.losses).toBe(t.matches);
-      expect(t.rounds).toBeGreaterThanOrEqual(t.matches);
+      expect(t.rounds).toBeGreaterThanOrEqual(4 * t.matches);
+      expect(t.rounds).toBeLessThanOrEqual(9 * t.matches);
       expect(t.roundsWon).toBeLessThanOrEqual(t.rounds);
       expect(t.deaths).toBeLessThanOrEqual(t.rounds);
       expect(t.headshots).toBeLessThanOrEqual(t.kills);
+    }
+  });
+
+  test('per map: rounds stay within the playlist\'s rounds per match, even when the line is at a bound', () => {
+    // Standard: 4 to 7 rounds a match. A line of all 4-3 matches leaves every map exactly 7 per match.
+    for (const rounds of [5 * 23, 7 * 23]) {
+      const standard: Tally = { ...line, matches: 23, wins: 12, losses: 11, rounds, roundsWon: Math.round(rounds / 2), deaths: 60 };
+      for (let seed = 0; seed < 40; seed += 1) {
+        const maps = splitOverMaps(createRandom(seed), standard, ids, [1, 1.4, 0.6, 1, 0.8, 0.3], { min: 4, max: 7 });
+        expect(sum([...maps.values()].map((t) => t.rounds))).toBe(rounds);
+        for (const t of maps.values()) {
+          expect(t.rounds).toBeGreaterThanOrEqual(4 * t.matches);
+          expect(t.rounds).toBeLessThanOrEqual(7 * t.matches);
+          if (rounds === 7 * 23) expect(t.rounds).toBe(7 * t.matches);
+        }
+      }
+    }
+  });
+
+  test('per map: every win keeps 4 rounds won and every loss 4 rounds lost, even when the line is at a bound', () => {
+    // 12-11 over 23 Standard matches and 130 rounds: at least 48 rounds won, at most 130 - 44 = 86.
+    for (const roundsWon of [48, 67, 86]) {
+      const standard: Tally = { ...line, matches: 23, wins: 12, losses: 11, rounds: 130, roundsWon, deaths: 60 };
+      for (let seed = 0; seed < 40; seed += 1) {
+        const maps = splitOverMaps(createRandom(seed), standard, ids, [1, 1.4, 0.6, 1, 0.8, 0.3], { min: 4, max: 7 });
+        expect(sum([...maps.values()].map((t) => t.roundsWon))).toBe(roundsWon);
+        for (const t of maps.values()) {
+          expect(t.roundsWon).toBeGreaterThanOrEqual(4 * t.wins);
+          expect(t.rounds - t.roundsWon).toBeGreaterThanOrEqual(4 * t.losses);
+          if (roundsWon === 48) expect(t.roundsWon).toBe(4 * t.wins);
+          if (roundsWon === 86) expect(t.rounds - t.roundsWon).toBe(4 * t.losses);
+        }
+      }
     }
   });
 

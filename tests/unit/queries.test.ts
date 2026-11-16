@@ -1,10 +1,12 @@
-import { QueryClient, QueryObserver, type QueryKey } from '@tanstack/react-query';
-import { afterEach, describe, expect, test } from 'vitest';
+import { hashKey, QueryClient, QueryObserver, type QueryKey } from '@tanstack/react-query';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { matchPath, parseMatchParams, parsePlayerParams, parsePov, playerPath, ROUTES } from '@renderer/app/routes';
 import { isForced, refreshScreen, updatePlayerQueries } from '@renderer/queries/force';
-import { isQueryOfPlayer, playerOfQueryKey, queryKeys, samePlayer, type MatchHistoryFilter } from '@renderer/queries/keys';
+import {
+  isQueryOfPlayer, keepAcrossSeasons, playerOfQueryKey, queryKeys, samePlayer, type MatchHistoryFilter,
+} from '@renderer/queries/keys';
 import type { LeaderboardQuery } from '@shared/types/leaderboard';
-import type { MatchId, PlayerId, PlaylistId } from '@shared/types/primitives';
+import type { MatchId, PlayerId, PlaylistId, SeasonId } from '@shared/types/primitives';
 import type { PlayerKey } from '@shared/types/player';
 import type { PlayerStatsQuery } from '@shared/types/provider';
 
@@ -20,6 +22,16 @@ describe('query keys', () => {
   test('stats keys carry the method and the request object', () => {
     expect(queryKeys.stats('getProfile', A)).toEqual(['stats', 'getProfile', A]);
     expect(queryKeys.matchPages(history(A))).toEqual(['stats', 'getMatches', history(A), 'pages']);
+  });
+
+  test('a call that depends on the season in force carries it: a new season is a new key, of the same player', () => {
+    const y11s3 = queryKeys.stats('getProfile', A, 'Y11S3' as SeasonId);
+    const y11s4 = queryKeys.stats('getProfile', A, 'Y11S4' as SeasonId);
+    expect(y11s3).toEqual(['stats', 'getProfile', A, 'Y11S3']);
+    expect(hashKey(y11s4)).not.toBe(hashKey(y11s3));
+    expect(playerOfQueryKey(y11s4)).toEqual(A);
+    expect(isQueryOfPlayer(y11s4, A)).toBe(true);
+    expect(queryKeys.stats('getLeaderboard', board, 'Y11S4' as SeasonId)).toEqual(['stats', 'getLeaderboard', board, 'Y11S4']);
   });
 
   test('the player of every per-player key, and of no other', () => {
@@ -42,6 +54,32 @@ describe('query keys', () => {
     expect(samePlayer(A, { platform: 'xbl', id: A.id })).toBe(false);
     expect(isQueryOfPlayer(queryKeys.stats('getMaps', stats(A)), A)).toBe(true);
     expect(isQueryOfPlayer(queryKeys.stats('getMaps', stats(A)), B)).toBe(false);
+  });
+});
+
+describe('a season start under a season-keyed call on screen', () => {
+  test('the answer for the season before stays until the new one is in; another player still starts empty', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 0 } } });
+    const options = (player: PlayerKey, season: string, queryFn: () => Promise<string>) => {
+      const queryKey = queryKeys.stats('getProfile', player, season as SeasonId);
+      return { queryKey, queryFn, placeholderData: keepAcrossSeasons<string, Error, QueryKey>(queryKey) };
+    };
+    const observer = new QueryObserver<string, Error, string, string, QueryKey>(client, options(A, 'Y11S3', () => Promise.resolve('A in Y11S3')));
+    const unsubscribe = observer.subscribe(() => undefined);
+    await vi.waitFor(() => expect(observer.getCurrentResult().data).toBe('A in Y11S3'));
+
+    // Y11S4 starts: the same call under a new key. The header keeps its data (no skeleton) while it is fetched.
+    let answer: (value: string) => void = () => undefined;
+    observer.setOptions(options(A, 'Y11S4', () => new Promise<string>((resolve) => (answer = resolve))));
+    expect(observer.getCurrentResult()).toMatchObject({ data: 'A in Y11S3', isPlaceholderData: true, isFetching: true });
+    answer('A in Y11S4');
+    await vi.waitFor(() => expect(observer.getCurrentResult()).toMatchObject({ data: 'A in Y11S4', isPlaceholderData: false }));
+
+    // Another player is another call: nothing of A's is shown for B.
+    observer.setOptions(options(B, 'Y11S4', () => new Promise<string>(() => undefined)));
+    expect(observer.getCurrentResult()).toMatchObject({ data: undefined, isPlaceholderData: false, isPending: true });
+    unsubscribe();
+    client.clear();
   });
 });
 

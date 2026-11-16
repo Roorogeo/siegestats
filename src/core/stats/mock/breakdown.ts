@@ -12,9 +12,6 @@ import type { OperatorTallies } from './world';
  * per-call scratch beyond its results.
  */
 
-/** No match has more rounds than this (the simulator stops at 15). */
-const MAX_ROUNDS_PER_MATCH = 15;
-
 /**
  * Whole parts of `total` in proportion to `weights`, adding up to `total` exactly. Each part gets the floor of its
  * quota; the units left over go one at a time to a part drawn in proportion to the fraction it lost. So a part
@@ -108,8 +105,19 @@ const formOf = (rng: Random, n: number): number[] => {
   return out;
 };
 
-/** The line's counts per map. `weights` (by position in `mapIds`) say how often each map comes up; 0 = never. */
-export function splitOverMaps(rng: Random, line: Tally, mapIds: readonly MapId[], weights: readonly number[]): Map<MapId, Tally> {
+/**
+ * The line's counts per map. `weights` (by position in `mapIds`) say how often each map comes up; 0 = never.
+ * `perMatch` is the playlist's rounds per match (roundsPerMatch()): each map's rounds stay within its matches times
+ * those bounds, and its rounds won leave `min` rounds won per win and `min` rounds lost per loss. The line must be
+ * within the same bounds (its matches, wins and losses as a whole).
+ */
+export function splitOverMaps(
+  rng: Random,
+  line: Tally,
+  mapIds: readonly MapId[],
+  weights: readonly number[],
+  perMatch: { min: number; max: number },
+): Map<MapId, Tally> {
   const all = apportion(rng, line.matches, weights);
   const parts: number[] = [];
   const m: number[] = [];
@@ -123,8 +131,13 @@ export function splitOverMaps(rng: Random, line: Tally, mapIds: readonly MapId[]
   const form = formOf(rng, parts.length);
   const pace = formOf(rng, parts.length); // some maps run to more rounds per match than others
   const wins = splitBounded(line.wins, scaled(m, form), null, m);
-  const rounds = splitBounded(line.rounds, scaled(m, pace), m, m.map((x) => x * MAX_ROUNDS_PER_MATCH));
-  const roundsWon = splitBounded(line.roundsWon, scaled(rounds, form), null, rounds);
+  const rounds = splitBounded(line.rounds, scaled(m, pace), m.map((x) => x * perMatch.min), m.map((x) => x * perMatch.max));
+  const roundsWon = splitBounded(
+    line.roundsWon,
+    scaled(rounds, form),
+    wins.map((w) => w * perMatch.min),
+    rounds.map((r, k) => r - ((m[k] as number) - (wins[k] as number)) * perMatch.min),
+  );
   const kills = splitBounded(line.kills, scaled(rounds, form), null, null);
   const deaths = splitBounded(line.deaths, scaled(rounds, form, true), null, rounds);
   const assists = splitBounded(line.assists, rounds, null, null);

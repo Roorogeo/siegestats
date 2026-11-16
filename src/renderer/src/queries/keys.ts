@@ -1,5 +1,6 @@
+import { hashKey, type PlaceholderDataFunction, type QueryKey } from '@tanstack/react-query';
 import type { MatchHistoryQuery } from '@shared/types/match';
-import type { Platform } from '@shared/types/primitives';
+import type { Platform, SeasonId } from '@shared/types/primitives';
 import type { PlayerKey } from '@shared/types/player';
 import type { StatsCalls, StatsMethod } from '@shared/types/provider';
 import { samePlayer } from '@shared/util/player';
@@ -15,7 +16,21 @@ export { samePlayer };
 
 export const STATS = 'stats';
 
-export type StatsQueryKey<K extends StatsMethod = StatsMethod> = readonly [typeof STATS, K, StatsCalls[K]['request'] | null];
+/** The fourth part, when there, is the season in force for a call whose answer depends on it (queryKeys.stats). */
+export type StatsQueryKey<K extends StatsMethod = StatsMethod> =
+  | readonly [typeof STATS, K, StatsCalls[K]['request'] | null]
+  | readonly [typeof STATS, K, StatsCalls[K]['request'] | null, SeasonId];
+
+/**
+ * placeholderData for a call keyed on the season in force (queryKeys.stats): when only that season changed (a season
+ * start re-asks the same call), the previous answer stays on screen until the new one is in, so the profile header
+ * does not drop to its skeleton and take the focus and scroll position with it. Any other change (another player)
+ * starts empty, as without it.
+ */
+export function keepAcrossSeasons<T, E, K extends QueryKey>(queryKey: QueryKey): PlaceholderDataFunction<T, E, T, K> {
+  const call = hashKey(queryKey.slice(0, 3));
+  return (previous, previousQuery) => (previousQuery && hashKey(previousQuery.queryKey.slice(0, 3)) === call ? previous : undefined);
+}
 
 /** useMatches pages over the cursor, so the cursor is not part of the filter or its key. */
 export type MatchHistoryFilter = Omit<MatchHistoryQuery, 'cursor'>;
@@ -24,8 +39,13 @@ export type MatchPagesKey = readonly [typeof STATS, 'getMatches', MatchHistoryFi
 export const queryKeys = {
   /** Everything from bridge.stats. */
   allStats: () => [STATS] as const,
-  /** One call; null = the hook is waiting for its input (route param, search text). */
-  stats: <K extends StatsMethod>(method: K, request: StatsCalls[K]['request'] | null): StatsQueryKey<K> => [STATS, method, request],
+  /**
+   * One call; null = the hook is waiting for its input (route param, search text). `seasonInForce` is for a call
+   * whose answer depends on the season in force (the profile's currentSeason, a board for 'current'): when a new
+   * season starts, the key changes and the query is fetched again.
+   */
+  stats: <K extends StatsMethod>(method: K, request: StatsCalls[K]['request'] | null, seasonInForce?: SeasonId): StatsQueryKey<K> =>
+    seasonInForce === undefined ? [STATS, method, request] : [STATS, method, request, seasonInForce],
   /** The match history of useMatches, one entry per filter, holding every loaded page. */
   matchPages: (filter: MatchHistoryFilter | null): MatchPagesKey => [STATS, 'getMatches', filter, 'pages'],
   capabilities: () => [STATS, 'getCapabilities'] as const,

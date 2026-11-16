@@ -50,6 +50,18 @@ export function formatFor(playlist: Pick<PlaylistDef, 'kind' | 'overtime' | 'dec
   };
 }
 
+/**
+ * The fewest and most rounds one match of the playlist can have, by the format simulateMatch() plays: a sweep to
+ * the regulation target, and every round to the last one in overtime (Ranked 4-9, Standard 4-7, Quick Match 3-5).
+ * Summary-only seasons keep their round counts inside these bounds too. `min` is also the fewest rounds the winner
+ * of a match takes, so a won match has at least `min` rounds won and a lost one at least `min` rounds lost.
+ */
+export function roundsPerMatch(playlist: Pick<PlaylistDef, 'kind' | 'overtime' | 'decidingRoundAt'>): { min: number; max: number } {
+  const format = formatFor(playlist);
+  const decider = Math.max(format.target, format.overtime?.target ?? format.target);
+  return { min: format.target, max: Math.min(MAX_ROUNDS, 2 * decider - 1) };
+}
+
 type Objective = 'bomb' | 'secure' | 'hostage' | 'elimination';
 type Weighted<T> = readonly (readonly [T, number])[];
 

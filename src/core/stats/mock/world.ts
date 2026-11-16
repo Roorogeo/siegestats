@@ -132,7 +132,10 @@ export interface SeasonAgg {
 export interface MockWorld {
   seed: number;
   generatedAt: IsoDateTime;
-  /** The season the generator treats as current: GameIndex.currentSeasonAt(now), the app's one rule. */
+  /**
+   * The season in force when the world was generated: GameIndex.currentSeasonAt(now), the app's one rule. The
+   * provider asks the clock again on every call (a season can start while the app runs); this one stays as it was.
+   */
   currentSeasonId: SeasonId;
   windowStart: IsoDateTime;
   accounts: MockAccount[];

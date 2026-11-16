@@ -59,7 +59,8 @@ const notFound = (what: string) => appError('not_found', `${what} was not found.
 /**
  * StatsProvider over the seeded world: every capability, no latency (the stats service adds that), and every
  * answer a fresh JSON copy, so nothing a caller does can change the world. The world is generated on the first
- * call, relative to the clock's "now" at that moment.
+ * call, relative to the clock's "now" at that moment; "current season" is read from the clock at every call, so a
+ * process that stays up across a season start moves to the new season with the renderer.
  */
 export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProviderOptions): MockProvider {
   let cached: MockWorld | null = null;
@@ -78,15 +79,18 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
     return found;
   };
 
+  /** The season in force now: GameIndex.currentSeasonAt(now), which may be newer than the world's currentSeasonId. */
+  const seasonInForce = (): SeasonId => game.currentSeasonAt(clock.now()).id;
+
   const resolveSeason = (seasonId: unknown): SeasonId => {
-    if (seasonId === 'current') return world().currentSeasonId;
+    if (seasonId === 'current') return seasonInForce();
     const season = typeof seasonId === 'string' ? game.season(seasonId) : null;
     if (!season) throw notFound('That season');
     return season.id;
   };
 
   const currentLadderRank = (a: MockAccount) => {
-    const agg = world().seasons.get(a.key)?.get(world().currentSeasonId);
+    const agg = world().seasons.get(a.key)?.get(seasonInForce());
     for (const playlist of game.config.playlists) {
       if (playlist.points !== 'ladder') continue;
       const rank = agg?.byPlaylist.get(playlist.id)?.standing?.rank;
@@ -156,13 +160,14 @@ export function createMockProvider({ game, clock, seed = MOCK_SEED }: MockProvid
       const a = account(key);
       const w = world();
       const records = w.seasonRecords(a.key);
+      const current = seasonInForce();
       const lifetime = emptyTally();
       for (const agg of w.seasons.get(a.key)?.values() ?? []) addTally(lifetime, agg.overall);
       const profile: PlayerProfile = {
         player: a.ref,
         level: a.person.level,
         lastPlayedAt: lastPlayedAt(a),
-        currentSeason: records.find((r) => r.seasonId === w.currentSeasonId) ?? emptySeasonRecord(w.currentSeasonId, a),
+        currentSeason: records.find((r) => r.seasonId === current) ?? emptySeasonRecord(current, a),
         lifetime: toMatchStats(lifetime),
         linkedAccounts: a.linked.flatMap((k) => {
           const other = w.accountByKey.get(k);

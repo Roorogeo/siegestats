@@ -5,6 +5,7 @@ import type { PlayerRef, PlayerSearchResult } from '@shared/types/player';
 import type { AppError } from '@shared/types/provider';
 import { playerKeyString, toPlayerRef } from '@shared/util/player';
 import { useAppInfo } from '../../app/AppInfoProvider';
+import { useCurrentSeason } from '../../app/GameConfigProvider';
 import { useSettings } from '../../app/SettingsProvider';
 import {
   callStats, isForced, queryKeys, useFavorites, useRecentSearches, useRememberSearch, useSearchPlayers,
@@ -227,6 +228,8 @@ export function usePlayerSearch({ idPrefix, suggestions, enabled, onChoose, clea
 
   // ---- actions ----
   const client = useQueryClient();
+  /** Part of the list's query key (useSearchPlayers), so Enter's fetch is the same TanStack entry. */
+  const season = useCurrentSeason().id;
   /** Bumped by every change of text or platform, so an Enter still waiting for its answer can tell it is out of date. */
   const generation = useRef(0);
 
@@ -279,7 +282,7 @@ export function usePlayerSearch({ idPrefix, suggestions, enabled, onChoose, clea
     debounced.set(name);
     client
       .fetchQuery({
-        queryKey: queryKeys.stats('searchPlayer', request),
+        queryKey: queryKeys.stats('searchPlayer', request, season),
         queryFn: ({ queryKey }) => callStats('searchPlayer', request, isForced(queryKey)),
       })
       .then(

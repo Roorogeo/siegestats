@@ -1,8 +1,8 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 import { createGameIndex, type GameIndex } from '@shared/game-config';
 import type { GameConfig, SeasonDef } from '@shared/types/game-config';
 import { toIso } from '@shared/util/time';
-import { useNow } from '../lib/useNow';
+import { NOW_TICK_MS } from '../lib/useNow';
 
 const GameContext = createContext<GameIndex | null>(null);
 
@@ -22,13 +22,32 @@ export function useGame(): GameIndex {
   return game;
 }
 
+// One timer, at the useNow pace, re-checks the season for every component that asks for it.
+const seasonWatchers = new Set<() => void>();
+let seasonTimer: number | undefined;
+
+function watchSeason(listener: () => void): () => void {
+  seasonWatchers.add(listener);
+  if (seasonWatchers.size === 1) {
+    seasonTimer = window.setInterval(() => {
+      for (const notify of seasonWatchers) notify();
+    }, NOW_TICK_MS);
+  }
+  return () => {
+    seasonWatchers.delete(listener);
+    if (seasonWatchers.size === 0) window.clearInterval(seasonTimer);
+  };
+}
+
 /**
  * The season in force now: game.currentSeasonAt(now), the same rule core and the mock use. Every "current season"
  * on screen (the Season period, the Current badge, default season filters) comes from here, never from
- * game.currentSeason(), so the app moves to a new season at its start date without a config edit.
+ * game.currentSeason(), so the app moves to a new season at its start date without a config edit. Re-checked every
+ * useNow tick (30 s), it re-renders only when the season changes, so the stats hooks can key their queries on it.
  */
 export function useCurrentSeason(): SeasonDef {
   const game = useGame();
-  const now = useNow();
-  return game.currentSeasonAt(toIso(now));
+  // currentSeasonAt answers the config's own SeasonDef objects: the same object until the season changes.
+  const read = useCallback(() => game.currentSeasonAt(toIso(Date.now())), [game]);
+  return useSyncExternalStore(watchSeason, read, read);
 }

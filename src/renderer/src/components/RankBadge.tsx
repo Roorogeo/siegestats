@@ -15,6 +15,11 @@ type RankBadgeProps = RankSource & {
   withName?: boolean;
   /** Unit after the points: 'RP' on the Ranked ladder (default), 'points' for a plain-points playlist. */
   unit?: string;
+  /**
+   * Starts the accessible name with the chip's short name ("S5 Silver V"), for a row whose name is read from its
+   * content: that name then holds what the row shows. The tooltip stays the full name.
+   */
+  shortNameInLabel?: boolean;
   className?: string;
 };
 
@@ -31,10 +36,12 @@ const NAME: Record<BadgeSize, string> = { sm: 'text-xs', md: 'text-[13px]', lg: 
  */
 export function RankBadge(props: RankBadgeProps) {
   const game = useGame();
-  const { size = 'md', withName = false, unit = 'RP', className } = props;
+  const { size = 'md', withName = false, unit = 'RP', shortNameInLabel = false, className } = props;
   const [rankId, points] = 'rank' in props ? [props.rank?.rankId ?? null, props.rank?.points ?? null] : [props.rankId, props.points ?? null];
   const state = rankState(game, rankId, points);
   const label = rankLabel(state, unit);
+  // A points chip's name already starts with its number; unranked and unknown show a mark ("–", "?"), not a word.
+  const name = shortNameInLabel && state.kind === 'rank' ? `${state.shortName} ${label}` : label;
 
   const chip =
     state.kind === 'rank' ? (
@@ -52,7 +59,7 @@ export function RankBadge(props: RankBadgeProps) {
     );
 
   return (
-    <span role="img" aria-label={label} title={label} className={cn('inline-flex min-w-0 items-center gap-1.5 align-middle', className)}>
+    <span role="img" aria-label={name} title={label} className={cn('inline-flex min-w-0 items-center gap-1.5 align-middle', className)}>
       {chip}
       {withName && (
         <span aria-hidden className={cn('min-w-0 truncate text-text', NAME[size])}>

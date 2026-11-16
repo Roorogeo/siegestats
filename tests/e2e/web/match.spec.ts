@@ -162,11 +162,11 @@ test('a match opened from the bottom of a long profile starts at the top with fo
   expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(700);
   await expect(heading).toBeFocused();
 
-  // Alt+Left: the profile again, at the offset it was left at, with focus on its heading.
+  // Alt+Left: the profile again, at the offset it was left at, with focus back on the link it was left from.
   await page.keyboard.press('Alt+ArrowLeft');
   await expect.poll(() => hashOf(page)).toBe(`#/player/${PLAYER.platform}/${PLAYER.id}`);
   await expect(heading).toHaveText(PLAYER.name, { timeout: 15_000 });
-  await expect(heading).toBeFocused();
+  await expect(last).toBeFocused();
   await expect.poll(() => main.evaluate((element) => element.scrollTop)).toBe(left);
   expect(errors).toEqual([]);
 });

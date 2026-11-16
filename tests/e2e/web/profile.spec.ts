@@ -132,7 +132,7 @@ test('picking my account in the onboarding search pins it and moves focus to the
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('My Profile');
   const box = page.getByRole('combobox', { name: 'Find your account' });
   await box.fill(PLAYER.name);
-  const option = page.getByRole('option', { name: new RegExp(`^${PLAYER.name}, `) }).first();
+  const option = page.getByRole('option', { name: new RegExp(`^${PLAYER.name} `) }).first();
   await expect(option).toBeVisible({ timeout: 15_000 });
   await box.press('ArrowDown');
   await box.press('Enter');
@@ -316,5 +316,42 @@ test('one current season everywhere: after a new season starts, every card, filt
   await expect(select).toHaveValue(id);
   await expect(select.locator('option:checked')).toHaveText(`${name} (${id})`);
   expect(new URL(page.url()).hash).not.toContain('oseason');
+  expect(errors).toEqual([]);
+});
+
+test('a season starting while the profile is open: within one tick the profile moves to it, no refresh', async ({ page, appUrl }) => {
+  // Two minutes before Y11S4 starts. The mock world is made then, so the account has no Y11S4 match yet.
+  const at = '2026-11-30T23:58:00.000Z';
+  const old = seasons.find((s) => s.startsAt <= at && (s.endsAt === null || at < s.endsAt)) as SeasonDef;
+  const next = seasons.find((s) => s.startsAt === old.endsAt) as SeasonDef;
+  expect([old.id, next?.id]).toEqual(['Y11S3', 'Y11S4']);
+  await page.clock.setSystemTime(new Date(at));
+  const errors = await open(page, appUrl, profileRoute(PLAYER, '?hperiod=season'));
+  await loaded(page);
+  const current = page.getByRole('region', { name: 'Current season' });
+  await expect(current.getByText(new RegExp(`^${old.name} · \\d+ matches · `))).toBeVisible({ timeout: 15_000 });
+  const peaks = page.getByRole('region', { name: 'Peak ranks' });
+  await expect(peaks.getByText(`${old.id} · Current season`)).toBeVisible();
+  const heading = page.getByRole('heading', { level: 1 });
+  await heading.focus();
+
+  // Three minutes on, as when the app stays open (the clock jumps; the 30 s timers fire once).
+  await page.clock.fastForward('03:00');
+  await expect(current.getByText(new RegExp(`^${next.name} · 0 matches · `))).toBeVisible({ timeout: 15_000 });
+  // The header kept its data while the profile was asked again, so it never dropped to its skeleton and the focus.
+  await expect(heading).toHaveText(PLAYER.name);
+  await expect(heading).toBeFocused();
+  await expect(current).toContainText(`Nothing played in ${next.name} so far`);
+  await expect(page.getByRole('region', { name: 'Ranked sessions' })).toContainText(`RP after every Ranked match · ${next.name} · 0 matches`);
+  await expect(page.getByRole('heading', { name: 'No matches this season', exact: true })).toBeVisible(); // history, Season
+  // Nothing calls the old season current any more: Peak ranks and the Seasons tab list the seasons played, and
+  // Y11S3 is now a finished one there; the Y11S4 row comes with the account's first match of it.
+  await expect(peaks.getByText(/Current season/)).toHaveCount(0);
+  await tabs(page).getByRole('tab', { name: 'Seasons' }).click();
+  const rows = page.getByRole('table', { name: 'Seasons' }).locator('tbody tr');
+  await expect(rows.first()).toContainText(old.name, { timeout: 15_000 });
+  await expect(rows.filter({ hasText: 'Current' })).toHaveCount(0);
+  await tabs(page).getByRole('tab', { name: 'Operators' }).click();
+  await expect(page.getByRole('combobox', { name: 'Season', exact: true })).toHaveValue(next.id);
   expect(errors).toEqual([]);
 });

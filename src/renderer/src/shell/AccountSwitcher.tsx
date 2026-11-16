@@ -1,8 +1,8 @@
 import { Check, ChevronDown, Settings2, UserRound } from 'lucide-react';
 import { Link } from 'react-router';
-import type { PlayerKey, PlayerRef } from '@shared/types/player';
+import type { PlayerRef } from '@shared/types/player';
 import type { AccountSettings } from '@shared/types/settings';
-import { playerKeyString } from '@shared/util/player';
+import { playerKeyString, samePlayer } from '@shared/util/player';
 import { useAppInfo } from '../app/AppInfoProvider';
 import { settingsPath } from '../app/routes';
 import { useSettings } from '../app/SettingsProvider';
@@ -10,8 +10,6 @@ import { PLATFORM_LABEL } from '../components';
 import { cn } from '../lib/cn';
 import { EmptyState } from '../ui';
 import { Popover } from './Popover';
-
-const sameKey = (a: PlayerKey, b: PlayerKey | null): boolean => b !== null && a.platform === b.platform && a.id === b.id;
 
 /** Original initials badge; no remote avatars in the shell. */
 function Initials({ player, className }: { player: PlayerRef; className?: string }) {
@@ -34,7 +32,8 @@ export function AccountSwitcher() {
   const { settings, update } = useSettings();
   const { provider } = useAppInfo().config;
   const accounts = settings.accounts[provider];
-  const active = accounts.pinned.find(({ player }) => sameKey(player, accounts.active))?.player ?? null;
+  const isActiveAccount = (player: PlayerRef): boolean => accounts.active !== null && samePlayer(player, accounts.active);
+  const active = accounts.pinned.find(({ player }) => isActiveAccount(player))?.player ?? null;
 
   const choose = (player: PlayerRef): void => {
     const next: AccountSettings = { pinned: accounts.pinned, active: { platform: player.platform, id: player.id } };
@@ -49,7 +48,6 @@ export function AccountSwitcher() {
         <button
           type="button"
           {...props}
-          aria-label={`My accounts: ${active ? active.name : 'No account'}`}
           title="My accounts"
           className={cn(
             'inline-flex h-8 max-w-48 items-center gap-2 rounded-control px-2 text-[13px] font-medium transition-colors hover:bg-surface-2 hover:text-text',
@@ -57,6 +55,8 @@ export function AccountSwitcher() {
           )}
         >
           {active ? <Initials player={active} className="size-5 text-[9px]" /> : <UserRound className="size-4 shrink-0" aria-hidden />}
+          {/* Named from its content, so the name holds what is drawn (axe: label in name): "My accounts: <name>". */}
+          <span className="sr-only">My accounts: </span>
           <span className="truncate">{active ? active.name : 'No account'}</span>
           <ChevronDown className={cn('size-3.5 shrink-0 transition-transform', open && 'rotate-180')} aria-hidden />
         </button>
@@ -78,7 +78,7 @@ export function AccountSwitcher() {
           ) : (
             <ul className="flex flex-col gap-0.5 p-1.5" aria-label="Pinned accounts">
               {accounts.pinned.map(({ player }) => {
-                const isActive = sameKey(player, accounts.active);
+                const isActive = isActiveAccount(player);
                 return (
                   <li key={playerKeyString(player)}>
                     <button

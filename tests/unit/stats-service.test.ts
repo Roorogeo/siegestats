@@ -4,7 +4,8 @@ import { createMemoryCacheStore } from '@core/memory/cache-store';
 import { createManualClock } from '@core/memory/clock';
 import { createMemorySettingsStore } from '@core/memory/settings-store';
 import { createMemorySnapshotStore } from '@core/memory/snapshot-store';
-import { CACHE_TTL_MS, cacheKey, createStatsService, createUnconfiguredStatsClient } from '@core/stats/stats-service';
+import { createMockProvider } from '@core/stats/mock/mock-provider';
+import { CACHE_TTL_MS, cacheKey, createStatsService, createUnconfiguredStatsClient, seasonDependent } from '@core/stats/stats-service';
 import type { Clock } from '@core/ports';
 import { createGameIndex } from '@shared/game-config';
 import { loadBundledGameConfig } from '@shared/game-config/bundled';
@@ -107,6 +108,57 @@ describe('stats service cache', () => {
     expect(spy).toHaveBeenCalledTimes(1);
     expect(cacheKey('getOperators', { b: 1, a: 2 })).toBe(cacheKey('getOperators', { a: 2, b: 1 }));
     expect(cacheKey('getOperators', { a: 1 })).not.toBe(cacheKey('getMaps', { a: 1 }));
+  });
+
+  test('a season start inside the TTL: answers about the season in force are fetched again, the others still cached', async () => {
+    const clock = createManualClock('2026-11-30T23:58:00.000Z');
+    const provider = createMockProvider({ game, clock });
+    const service = createStatsService({ provider, cache: createMemoryCacheStore(), snapshots: createMemorySnapshotStore(), clock, game, latencyMs: 0 });
+    const luhal = { platform: 'pc', id: '17c92055-6505-482b-922b-f80b5a5c03a1' } as PlayerKey;
+    const ops = { player: luhal, seasonId: 'Y11S3', playlistId: 'all', mapId: 'all' } as never;
+    const board = { playlistId: 'ranked', metric: 'points', scope: 'global', seasonId: 'current', regionId: 'all', page: 1, pageSize: 25 } as never;
+    const distribution = { playlistId: 'ranked', scope: 'global', seasonId: 'current' } as never;
+    const search = { name: 'LuhalAlt', platform: 'pc', limit: 1 } as const;
+    expect((await service.getProfile(luhal)).data.currentSeason.seasonId).toBe('Y11S3');
+    expect((await service.searchPlayer(search)).data[0]?.rankId).not.toBeNull();
+    await service.getOperators(ops);
+    await service.getLeaderboard(board);
+    const oldBuckets = (await service.getRankDistribution(distribution)).data.buckets;
+
+    clock.advance(30 * SECOND_MS); // still Y11S3: everything comes from the cache
+    expect((await service.getProfile(luhal)).from).toBe('cache');
+    expect((await service.getRankDistribution(distribution)).from).toBe('cache');
+
+    clock.advance(2 * MINUTE_MS); // 00:00:30 on Dec 1, well inside every TTL
+    const profile = await service.getProfile(luhal);
+    expect(profile).toMatchObject({ from: 'source', data: { currentSeason: { seasonId: 'Y11S4', byPlaylist: [] } } });
+    expect(await service.searchPlayer(search)).toMatchObject({ from: 'source', data: [{ name: 'LuhalAlt', rankId: null }] });
+    expect((await service.getLeaderboard(board)).from).toBe('source');
+    const now = await service.getRankDistribution(distribution);
+    expect(now.from).toBe('source');
+    expect(now.data.buckets).not.toEqual(oldBuckets);
+    expect((await service.getOperators(ops)).from).toBe('cache'); // a named season does not depend on the clock
+    // Which requests carry the season in their key.
+    expect(seasonDependent('getProfile', luhal)).toBe(true);
+    expect(seasonDependent('getLeaderboard', board)).toBe(true);
+    expect(seasonDependent('getLeaderboard', { ...(board as object), seasonId: 'Y11S3' })).toBe(false);
+    expect(seasonDependent('getSeasons', luhal)).toBe(false);
+    expect(cacheKey('getProfile', luhal, 'Y11S4' as SeasonId)).not.toBe(cacheKey('getProfile', luhal, 'Y11S3' as SeasonId));
+  });
+
+  test('after a season start, a failing source does not hand out the previous season as current', async () => {
+    let fail = false;
+    const clock = createManualClock('2026-11-30T23:59:00.000Z');
+    const { service } = setup(() => {
+      if (fail) throw appError('network', 'offline');
+      return profile(5);
+    }, { clock });
+    expect((await service.getProfile(PLAYER)).from).toBe('source');
+    clock.advance(2 * MINUTE_MS);
+    fail = true;
+    await expect(service.getProfile(PLAYER)).rejects.toMatchObject({ code: 'network' });
+    clock.set('2026-11-30T23:59:30.000Z' as IsoDateTime); // back in Y11S3 (a clock set back): that answer is still there
+    expect((await service.getProfile(PLAYER)).from).toBe('cache');
   });
 
   test('the cache hands out copies: changing an answer does not change the next one', async () => {

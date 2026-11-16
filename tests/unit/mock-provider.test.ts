@@ -423,3 +423,38 @@ describe('provider answers', () => {
     expect(provider.capabilities.leaderboardMetrics).toEqual(['points', 'kd', 'winRate', 'level']);
   });
 });
+
+describe('a season starting while the process runs', () => {
+  test('"current" follows the clock at every call: profile, search rank, boards and distributions move to the new season', async () => {
+    const luhal = { platform: 'pc', id: '17c92055-6505-482b-922b-f80b5a5c03a1' } as PlayerKey;
+    const late = createManualClock('2026-11-30T23:58:00.000Z');
+    const live = createMockProvider({ game, clock: late });
+    const board = (seasonId: string) =>
+      live.getLeaderboard({ playlistId: 'ranked', metric: 'points', scope: 'global', seasonId, regionId: 'all', page: 1, pageSize: 25 } as never);
+    const distribution = (seasonId: string) => live.getRankDistribution({ playlistId: 'ranked', scope: 'global', seasonId } as never);
+    const rankOf = async () => (await live.searchPlayer({ name: 'LuhalAlt', platform: 'pc', limit: 1 }))[0]?.rankId ?? null;
+
+    const before = await live.getProfile(luhal);
+    expect(before.currentSeason.seasonId).toBe('Y11S3');
+    expect(before.currentSeason.overall.matches).toBeGreaterThan(0);
+    expect(await rankOf()).toBe(before.currentSeason.byPlaylist.find((p) => p.playlistId === 'ranked')?.standing?.rank?.rankId ?? null);
+    expect(await rankOf()).not.toBeNull();
+    expect((await board('current')).entries).toEqual((await board('Y11S3')).entries);
+    expect((await distribution('current')).buckets).toEqual((await distribution('Y11S3')).buckets);
+
+    late.advance(3 * 60_000); // 00:01 on Dec 1: Y11S4 has started; the world (generated at 23:58) stays as it was
+    expect(game.currentSeasonAt(late.now()).id).toBe('Y11S4');
+    expect(live.world().currentSeasonId).toBe('Y11S3');
+    const after = await live.getProfile(luhal);
+    expect(after.currentSeason).toEqual({
+      seasonId: 'Y11S4', platformFamily: 'pc', overall: expect.objectContaining({ matches: 0 }), byPlaylist: [], bestAttacker: null, bestDefender: null,
+    });
+    expect(after.lifetime).toEqual(before.lifetime);
+    expect(await rankOf()).toBeNull(); // no Ranked match in Y11S4 yet
+    expect((await board('current')).entries).toEqual((await board('Y11S4')).entries);
+    expect((await distribution('current')).buckets).toEqual((await distribution('Y11S4')).buckets);
+    expect((await distribution('current')).buckets).not.toEqual((await distribution('Y11S3')).buckets);
+    // The seasons played are unchanged: Y11S3 is now a finished season, and still the newest one played.
+    expect((await live.getSeasons(luhal))[0]?.seasonId).toBe('Y11S3');
+  });
+});

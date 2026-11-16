@@ -137,6 +137,20 @@ test('Back and Forward in the title bar keep focus when used from the keyboard',
   await page.keyboard.press('Space');
   await expect(heading).toHaveText('Legend Division');
   await expect(forward).toBeFocused();
+
+  // At either end of the history the pressed button turns disabled and cannot keep focus: the page's heading takes
+  // it, so the next Tab goes on in the page, not from the start of the window.
+  await page.keyboard.press('Space');
+  await expect(heading).toHaveText('Live Match');
+  await expect(forward).toBeDisabled();
+  await expect(heading).toBeFocused();
+  await back.focus();
+  for (const name of ['Legend Division', 'Leaderboards', 'Home']) {
+    await page.keyboard.press('Enter');
+    await expect(heading).toHaveText(name);
+  }
+  await expect(back).toBeDisabled();
+  await expect(heading).toBeFocused();
   expect(errors).toEqual([]);
 });
 

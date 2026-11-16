@@ -3,6 +3,7 @@ import { createManualClock } from '@core/memory/clock';
 import { generateWorld, matchDetail, matchSummary, PLACEMENT_MATCHES } from '@core/stats/mock/generate-world';
 import { createMockProvider, MOCK_SEED } from '@core/stats/mock/mock-provider';
 import { DENIED_HANDLES, isDeniedHandle } from '@core/stats/mock/names';
+import { roundsPerMatch } from '@core/stats/mock/simulate';
 import type { MockWorld } from '@core/stats/mock/world';
 import { createGameIndex } from '@shared/game-config';
 import { loadBundledGameConfig } from '@shared/game-config/bundled';
@@ -440,6 +441,92 @@ describe('the game config shapes the demo matches', () => {
       if (extra > 0) seen.add(`${m.playlist.kind} ${score} ${extra}`);
     }
     expect([...seen].sort()).toEqual(['legend 5-3 2', 'legend 5-4 3', 'ranked 5-3 2', 'ranked 5-4 3', 'standard 4-3 1']);
+  });
+
+  test('rounds per match from the playlist config: Ranked and Legend 4-9, Standard 4-7, Quick, Arcade and Event 3-5', () => {
+    const limits = Object.fromEntries(game.config.playlists.map((p) => [p.id, roundsPerMatch(p)]));
+    expect(limits).toMatchObject({
+      ranked: { min: 4, max: 9 },
+      'legend-division': { min: 4, max: 9 },
+      standard: { min: 4, max: 7 },
+      'quick-match': { min: 3, max: 5 },
+      arcade: { min: 3, max: 5 },
+      event: { min: 3, max: 5 },
+    });
+  });
+
+  test('every simulated match, and every summary-season line and map row, has rounds a real match count allows', () => {
+    const within = (what: string, playlistId: string, matches: number, rounds: number): void => {
+      const playlist = game.playlist(playlistId);
+      expect(playlist, what).not.toBeNull();
+      const { min, max } = roundsPerMatch(playlist as NonNullable<typeof playlist>);
+      expect(rounds, `${what}: ${matches} matches, ${rounds} rounds`).toBeGreaterThanOrEqual(min * matches);
+      expect(rounds, `${what}: ${matches} matches, ${rounds} rounds`).toBeLessThanOrEqual(max * matches);
+    };
+    // Sanity: the simulator already plays inside those bounds, so the seasons built from matches do too.
+    for (const m of world.matches) within(m.id, m.playlist.id, 1, m.rounds.count);
+    const perMatch = { simulated: new Map<string, [number, number]>(), summary: new Map<string, [number, number]>() };
+    const count = (into: Map<string, [number, number]>, kind: string, t: { matches: number; rounds: number }): void => {
+      const entry = into.get(kind) ?? [0, 0];
+      entry[0] += t.matches;
+      entry[1] += t.rounds;
+      into.set(kind, entry);
+    };
+    for (const m of world.matches) count(perMatch.simulated, m.playlist.kind, { matches: 1, rounds: m.rounds.count });
+    let rows = 0;
+    for (const a of world.accounts) {
+      for (const agg of world.seasonsOf(a.key).values()) {
+        for (const [playlistId, { tally }] of agg.byPlaylist) {
+          within(`${a.ref.name} ${agg.seasonId} ${playlistId}`, playlistId, tally.matches, tally.rounds);
+          if (!agg.fromMatches) count(perMatch.summary, game.playlist(playlistId)?.kind ?? '', tally);
+        }
+        for (const [playlistId, line] of agg.summary ?? []) {
+          for (const [mapId, t] of line.maps) {
+            within(`${a.ref.name} ${agg.seasonId} ${playlistId} ${mapId}`, playlistId, t.matches, t.rounds);
+            rows += 1;
+          }
+        }
+      }
+    }
+    expect(rows).toBeGreaterThan(20_000);
+    // Summary seasons average about the rounds per match the simulator plays, kind by kind.
+    for (const kind of ['ranked', 'standard', 'quick', 'arcade', 'event']) {
+      const [sm, sr] = perMatch.simulated.get(kind) ?? [0, 0];
+      const [qm, qr] = perMatch.summary.get(kind) ?? [0, 0];
+      expect(sm * qm, kind).toBeGreaterThan(0);
+      expect(Math.abs(qr / qm - sr / sm) / (sr / sm), kind).toBeLessThan(0.05);
+    }
+  });
+
+  test('a win takes at least the regulation target in rounds won, a loss that many lost: every match, season line and map row', () => {
+    const target = (playlistId: string): number => {
+      const playlist = game.playlist(playlistId);
+      expect(playlist, playlistId).not.toBeNull();
+      return roundsPerMatch(playlist as NonNullable<typeof playlist>).min;
+    };
+    const plausible = (what: string, playlistId: string, t: { wins: number; losses: number; rounds: number; roundsWon: number }): void => {
+      const min = target(playlistId);
+      const label = `${what}: ${t.wins}-${t.losses}, ${t.roundsWon} of ${t.rounds} rounds won`;
+      expect(t.roundsWon, label).toBeGreaterThanOrEqual(min * t.wins);
+      expect(t.rounds - t.roundsWon, label).toBeGreaterThanOrEqual(min * t.losses);
+    };
+    // Sanity: the simulator's winner always reaches the target, so the seasons built from matches hold it too.
+    for (const m of world.matches) {
+      for (const slot of m.slots) plausible(`${m.id} ${slot.team}`, m.playlist.id, slot.tally);
+    }
+    let rows = 0;
+    for (const a of world.accounts) {
+      for (const agg of world.seasonsOf(a.key).values()) {
+        for (const [playlistId, { tally }] of agg.byPlaylist) plausible(`${a.ref.name} ${agg.seasonId} ${playlistId}`, playlistId, tally);
+        for (const [playlistId, line] of agg.summary ?? []) {
+          for (const [mapId, t] of line.maps) {
+            plausible(`${a.ref.name} ${agg.seasonId} ${playlistId} ${mapId}`, playlistId, t);
+            rows += 1;
+          }
+        }
+      }
+    }
+    expect(rows).toBeGreaterThan(20_000);
   });
 
   test('no operator is picked in a season before its release', () => {

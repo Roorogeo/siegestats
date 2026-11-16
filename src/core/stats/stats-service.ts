@@ -1,5 +1,6 @@
 import type { GameIndex } from '@shared/game-config';
 import type { PlayerProfile } from '@shared/types/player';
+import type { SeasonId } from '@shared/types/primitives';
 import type { AppError, Fetched, StatsCalls, StatsClient, StatsMethod, StatsProvider } from '@shared/types/provider';
 import type { ProfileSnapshot, SnapshotCounters } from '@shared/types/storage';
 import type { RankPoint } from '@shared/types/stats';
@@ -35,7 +36,20 @@ const STALE_FALLBACK: ReadonlySet<AppError['code']> = new Set(['network', 'unava
 /** Default artificial latency of a source call, so loading states can be seen while developing on the mock. */
 export const DEFAULT_LATENCY_MS = { min: 250, max: 600 } as const;
 
-export const cacheKey = (method: StatsMethod, request: unknown): string => `${method}:${canonicalJson(request)}`;
+/** `seasonInForce` is set for a request whose answer depends on the season in force (seasonDependent()). */
+export const cacheKey = (method: StatsMethod, request: unknown, seasonInForce: SeasonId | null = null): string =>
+  `${method}${seasonInForce === null ? '' : `@${seasonInForce}`}:${canonicalJson(request)}`;
+
+/**
+ * Whether the answer depends on which season is in force: a profile's currentSeason, a search hit's current rank, a
+ * board or distribution asked for 'current'. Their cache keys carry that season, so once a new season starts no
+ * answer cached for the one before is served as current (nor as the stale fallback).
+ */
+export function seasonDependent(method: StatsMethod, request: unknown): boolean {
+  if (method === 'getProfile' || method === 'searchPlayer') return true;
+  if (method !== 'getLeaderboard' && method !== 'getRankDistribution') return false;
+  return typeof request === 'object' && request !== null && (request as { seasonId?: unknown }).seasonId === 'current';
+}
 
 export interface StatsServiceDeps {
   provider: StatsProvider;
@@ -111,7 +125,7 @@ export function createStatsService(deps: StatsServiceDeps): StatsService {
   }
 
   function call<K extends StatsMethod>(method: K, request: StatsCalls[K]['request'], opts?: { force: boolean }): Promise<Fetched<StatsCalls[K]['response']>> {
-    const key = cacheKey(method, request);
+    const key = cacheKey(method, request, seasonDependent(method, request) ? game.currentSeasonAt(clock.now()).id : null);
     const join = (): Promise<Fetched<StatsCalls[K]['response']>> | undefined =>
       inFlight.get(key) as Promise<Fetched<StatsCalls[K]['response']>> | undefined;
     const run = async (): Promise<Fetched<StatsCalls[K]['response']>> => {

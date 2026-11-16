@@ -10,7 +10,7 @@ import { headshotPct } from '@shared/util/stats';
 import { DAY_MS, MINUTE_MS, toIso, toMs } from '@shared/util/time';
 import { mergeOperatorTallies, splitOverMaps, splitOverOperators, type OperatorSlot } from './breakdown';
 import { familyOf, generateAccounts } from './players';
-import { expandRounds, operatorIdsOf, simulateMatch, type SimPlayer } from './simulate';
+import { expandRounds, operatorIdsOf, roundsPerMatch, simulateMatch, type SimPlayer } from './simulate';
 import {
   addOperatorTally, addTally, emptyOperatorTally, emptyTally, toMatchStats, toOperatorStats, type OperatorTally, type Tally,
 } from './tally';
@@ -30,6 +30,13 @@ const LATEST_START_BEFORE_NOW_MS = 50 * MINUTE_MS;
 /** How often each kind of playlist is queued. Kinds, not ids: the config decides which playlists exist. */
 const KIND_WEIGHTS: Partial<Record<PlaylistKind, number>> = { ranked: 46, standard: 20, quick: 22, arcade: 6, event: 6 };
 const LEGEND_SHARE = 0.4; // of a Legend player's matches, in a season with a Legend edition
+/**
+ * Rounds per match of a summary-only season's playlist line, about what simulateMatch() averages for that kind
+ * (a generated world: Ranked 6.1, Standard 5.7, Quick Match 4.0, the first-to-3 kinds 4.1), so the seasons before
+ * the window read like the ones built from matches.
+ */
+const SUMMARY_ROUNDS_PER_MATCH: Partial<Record<PlaylistKind, number>> = { ranked: 6.1, standard: 5.7, quick: 4.0 };
+const OTHER_ROUNDS_PER_MATCH = 4.1;
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 const weightOf = (a: MockAccount): number => a.person.activity * a.activityShare;
@@ -531,8 +538,10 @@ function addSummarySeasons(
         if (m === 0) continue;
         const wr = clamp(0.5 + 0.035 * p.skill + r.normal(0, 0.04), 0.25, 0.75);
         const wins = Math.round(m * wr);
-        const avgRounds = playlist.kind === 'ranked' || playlist.kind === 'standard' ? 7.4 : 4.4;
-        const rounds = Math.max(m, Math.round(m * avgRounds * r.float(0.95, 1.05)));
+        // Within what m matches of that playlist can have: a Standard match never runs past 7 rounds.
+        const perMatch = roundsPerMatch(playlist);
+        const avgRounds = SUMMARY_ROUNDS_PER_MATCH[playlist.kind] ?? OTHER_ROUNDS_PER_MATCH;
+        const rounds = clamp(Math.round(m * avgRounds * r.float(0.95, 1.05)), m * perMatch.min, m * perMatch.max);
         const kpr = clamp(0.78 + 0.16 * p.skill + r.normal(0, 0.05), 0.35, 1.4);
         const dpr = clamp(0.66 - 0.07 * p.skill + r.normal(0, 0.03), 0.35, 0.95);
         const kills = Math.round(rounds * kpr);
@@ -545,7 +554,8 @@ function addSummarySeasons(
           assists: Math.round(kills * r.float(0.25, 0.4)),
           headshots: Math.round(kills * p.headshotRate),
           rounds,
-          roundsWon: Math.round(rounds * (0.5 + (wr - 0.5) * 0.6)),
+          // Each win took at least perMatch.min rounds won, each loss that many rounds lost.
+          roundsWon: clamp(Math.round(rounds * (0.5 + (wr - 0.5) * 0.6)), perMatch.min * wins, rounds - perMatch.min * (m - wins)),
           damage: Math.round(rounds * (kpr * 118 + 45)),
         };
         // As in generated seasons: a points playlist always has a standing, with no rank until placements are done.
@@ -592,7 +602,8 @@ function summaryBreakdown(game: GameIndex): (rng: Random, account: MockAccount, 
         const maps = mapsFor(season, playlist);
         const mapWeights = maps.map(() => b.float(0.4, 1.6));
         const operators = splitOverOperators(b, line.tally, slots, weights);
-        summary.set(playlistId, { maps: splitOverMaps(b, line.tally, maps.map((m) => m.id), mapWeights), operators });
+        const byMap = splitOverMaps(b, line.tally, maps.map((m) => m.id), mapWeights, roundsPerMatch(playlist));
+        summary.set(playlistId, { maps: byMap, operators });
         mergeOperatorTallies(agg.operators, operators);
       }
       agg.summary = summary;

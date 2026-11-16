@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { createRequire } from 'node:module';
 import { expect, test } from './serve';
 
 /**
@@ -66,9 +67,53 @@ const field = (page: Page) => page.getByRole('combobox', { name: 'Search players
 const platformSelect = (page: Page) => page.getByRole('combobox', { name: 'Platform to search' });
 const results = (page: Page, platform: string) => page.getByRole('listbox', { name: `Players on ${platform}` });
 const suggestions = (page: Page) => page.getByRole('listbox', { name: 'Search suggestions' });
-/** The accessible names of a listbox's options; each starts with the player's name. */
-const optionNames = (list: Locator): Promise<string[]> => list.getByRole('option').evaluateAll((els) => els.map((el) => el.getAttribute('aria-label') ?? ''));
-const playerName = (optionName: string): string => optionName.split(', ')[0] ?? '';
+const escape = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * An element's accessible name as the browser computes it, read off its ARIA snapshot (options have no aria-label:
+ * they are named from their cells). The snapshot's first line is `- role "name"`, YAML-quoted as a whole when needed.
+ */
+async function accessibleName(locator: Locator): Promise<string> {
+  let line = ((await locator.ariaSnapshot()).split('\n')[0] ?? '').replace(/^- /, '');
+  if (line.startsWith("'")) line = line.slice(1, line.lastIndexOf("'")).replace(/''/g, "'");
+  const quoted = /^[\w-]+ ("(?:[^"\\]|\\.)*")/.exec(line)?.[1];
+  return quoted ? (JSON.parse(quoted) as string) : '';
+}
+/** The accessible names of a listbox's options, in order. */
+const optionNames = async (list: Locator): Promise<string[]> => Promise.all((await list.getByRole('option').all()).map(accessibleName));
+/** The player's name at the start of a result option's name ("Otter_919 Exact match Lv 236 S3 Silver III 7 h ago"). */
+const playerName = (optionName: string): string => /^(.+?) (?:Exact match )?Lv /.exec(optionName)?.[1] ?? '';
+/**
+ * Label in name, checked without axe (the axe tests below need axe-core): no option has an aria-label or
+ * aria-labelledby, which axe's label-content-name-mismatch holds against everything the row draws, the avatar's
+ * initials included, so each is named from its cells; and that name holds every word the row shows, in the row's
+ * order. The words drawn inside an image (the badge's "S3") count, since its name stands for them; other aria-hidden
+ * text (the initials) does not, and a mark with no letter or digit ("–" for unranked) is named in words.
+ */
+async function expectNamedFromContent(list: Locator): Promise<void> {
+  const options = await list.getByRole('option').all();
+  expect(options.length).toBeGreaterThan(0);
+  for (const option of options) {
+    const { labelled, words } = await option.evaluate((element) => {
+      const shown: string[] = [];
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const parent = node.parentElement;
+        if (!parent || parent.closest('.sr-only')) continue;
+        if (parent.closest('[aria-hidden="true"]') && !parent.closest('[role="img"][aria-label]')) continue;
+        shown.push(...(node.textContent ?? '').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)));
+      }
+      return { labelled: element.hasAttribute('aria-label') || element.hasAttribute('aria-labelledby'), words: shown };
+    });
+    const name = await accessibleName(option);
+    expect(labelled, `"${name}" is named from its cells`).toBe(false);
+    let from = 0;
+    for (const word of words) {
+      const at = name.toLowerCase().indexOf(word.toLowerCase(), from);
+      expect(at, `"${name}" holds the shown "${word}" in the row's order`).toBeGreaterThanOrEqual(0);
+      from = at + word.length;
+    }
+  }
+}
 /** The results list once the answer for what is typed is in (not the previous answer kept on screen meanwhile). */
 async function settledResults(page: Page, platform: string): Promise<Locator> {
   const list = results(page, platform);
@@ -92,15 +137,20 @@ test('typing part of a handle lists matching players for the platform, exact mat
   await expect(pc.getByRole('option').first().locator('mark')).toHaveText(/^otter$/i);
   // Each row shows level, rank and last played; unknown values are a dash, never 0.
   await expect(pc.getByRole('option').first()).toContainText(/Lv (\d[\d,]*|–)/);
-  await expect(pc.getByRole('option').first().getByRole('img')).toHaveAccessibleName(/.+/);
-  // The option's name is the row's visible words in order ("Lv 236", the badge's "S5" before "Silver V", "14 h ago").
+  // The option is named from its cells: the row's visible words in order, the player's name first ("Otter_919 Lv 236
+  // S3 Silver III 7 h ago"). The badge is named by the short name it shows and then the full one; a dash or a
+  // question mark is named in words.
   const row = pc.getByRole('option').first();
+  const name = (await row.locator('mark').locator('..').innerText()).trim();
   const level = (await row.locator('[title="Level"]').innerText()).trim();
   const badge = (await row.getByRole('img').innerText()).trim();
+  const rankName = (await row.getByRole('img').getAttribute('title')) ?? '';
   const played = (await row.locator('[title="Last played"]').innerText()).trim();
-  const escape = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const rankWords = /^[–?]$/.test(badge) ? '[^,]+' : `${escape(badge)}\\b[^,]*`;
-  await expect(row).toHaveAccessibleName(new RegExp(`^[^,]+, (Exact match, )?${escape(level)}, ${rankWords}, ${escape(played)}$`));
+  expect(rankName).not.toBe('');
+  const rank = /^[–?]$/.test(badge) ? rankName : `${badge} ${rankName}`;
+  await expect(row.getByRole('img')).toHaveAccessibleName(rank);
+  await expect(row).toHaveAccessibleName(`${name} ${level} ${rank} ${played}`);
+  await expectNamedFromContent(pc);
 
   // Another platform is another set of accounts.
   await platformSelect(page).selectOption('xbl');
@@ -115,11 +165,9 @@ test('typing part of a handle lists matching players for the platform, exact mat
   // The exact name of a player that was not first: now they come first, marked as the exact match.
   const target = xboxNames.at(-1) ?? '';
   await field(page).fill(target);
-  await expect(xbox.getByRole('option').first()).toHaveAccessibleName(new RegExp(`^${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, exact match, `), {
-    ignoreCase: true,
-    timeout: 10_000,
-  });
+  await expect(xbox.getByRole('option').first()).toHaveAccessibleName(new RegExp(`^${escape(target)} Exact match Lv `), { timeout: 10_000 });
   await expect(xbox.getByRole('option').first()).toContainText('Exact');
+  await expectNamedFromContent(xbox);
   expect(errors).toEqual([]);
 });
 
@@ -157,7 +205,7 @@ test('arrow keys move the active option and wrap, Enter opens the profile, and t
   await page.keyboard.press('ArrowDown');
   await expect(options.nth(0)).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('ArrowDown');
-  const chosen = playerName((await options.nth(1).getAttribute('aria-label')) ?? '');
+  const chosen = playerName(await accessibleName(options.nth(1)));
 
   await page.keyboard.press('Enter');
   await expect.poll(() => hashOf(page)).toMatch(/^#\/player\/pc\/[^/?]+$/);
@@ -173,7 +221,7 @@ test('arrow keys move the active option and wrap, Enter opens the profile, and t
   await page.keyboard.press('Control+k');
   const recent = suggestions(page).getByRole('group', { name: 'Recent' });
   await expect(recent.getByRole('option')).toHaveCount(1);
-  await expect(recent.getByRole('option').first()).toHaveAccessibleName(new RegExp(`^${chosen}, PC, just now$`));
+  await expect(recent.getByRole('option').first()).toHaveAccessibleName(`${chosen} PC just now`);
   const profileHash = hashOf(page);
   await page.keyboard.press('Escape');
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Leaderboards' }).click();
@@ -189,7 +237,7 @@ test('Enter right after typing opens the first result once it arrives', async ({
   await page.keyboard.press('Control+k');
   await page.keyboard.type('otter');
   const first = (await settledResults(page, 'PC')).getByRole('option').first();
-  const exact = playerName((await first.getAttribute('aria-label')) ?? '');
+  const exact = playerName(await accessibleName(first));
 
   await field(page).fill('');
   // No pause for the results: Enter waits for the answer to the full name, which lists the exact match first.
@@ -284,7 +332,7 @@ test('pinned accounts, favourites and recent searches fill the empty box in that
   // Before anything is searched: just the pinned account.
   await page.keyboard.press('Control+k');
   await expect(suggestions(page).getByRole('group')).toHaveCount(1);
-  await expect(suggestions(page).getByRole('group', { name: 'My accounts' }).getByRole('option')).toHaveAccessibleName(`${LUHAL.name}, PC`);
+  await expect(suggestions(page).getByRole('group', { name: 'My accounts' }).getByRole('option')).toHaveAccessibleName(`${LUHAL.name} PC`);
 
   // Open two players from the search and star the second.
   const openFirst = async (text: string): Promise<string> => {
@@ -292,7 +340,7 @@ test('pinned accounts, favourites and recent searches fill the empty box in that
     await page.keyboard.type(text);
     const option = (await settledResults(page, 'PC')).getByRole('option').first();
     await expect(option).toHaveAccessibleName(new RegExp(text, 'i'));
-    const name = playerName((await option.getAttribute('aria-label')) ?? '');
+    const name = playerName(await accessibleName(option));
     await option.click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(name, { timeout: 15_000 });
     return name;
@@ -311,9 +359,10 @@ test('pinned accounts, favourites and recent searches fill the empty box in that
   await expect(groups.nth(0)).toHaveAccessibleName('My accounts');
   await expect(groups.nth(1)).toHaveAccessibleName('Favourites');
   await expect(groups.nth(2)).toHaveAccessibleName('Recent');
-  await expect(suggestions(page).getByRole('group', { name: 'Favourites' }).getByRole('option')).toHaveAccessibleName(`${second}, PC`);
+  await expect(suggestions(page).getByRole('group', { name: 'Favourites' }).getByRole('option')).toHaveAccessibleName(`${second} PC`);
   await expect(suggestions(page).getByRole('group', { name: 'Recent' }).getByRole('option')).toHaveCount(1);
-  await expect(suggestions(page).getByRole('group', { name: 'Recent' }).getByRole('option')).toHaveAccessibleName(new RegExp(`^${first}, PC, `));
+  await expect(suggestions(page).getByRole('group', { name: 'Recent' }).getByRole('option')).toHaveAccessibleName(new RegExp(`^${escape(first)} PC (just now|\\d+ min ago)$`));
+  await expectNamedFromContent(suggestions(page));
   // The arrow keys run through all three groups.
   await page.keyboard.press('ArrowUp');
   await expect(suggestions(page).getByRole('group', { name: 'Recent' }).getByRole('option')).toHaveAttribute('aria-selected', 'true');
@@ -366,7 +415,8 @@ test('My Profile onboarding: the inline search pins the picked account', async (
   await box.click();
   await page.keyboard.type('otter');
   const list = await settledResults(page, 'PlayStation');
-  const name = playerName((await list.getByRole('option').first().getAttribute('aria-label')) ?? '');
+  await expectNamedFromContent(list);
+  const name = playerName(await accessibleName(list.getByRole('option').first()));
   await page.keyboard.press('ArrowDown');
   await expect(box).toHaveAttribute('aria-activedescendant', (await list.getByRole('option').first().getAttribute('id')) ?? '');
   await page.keyboard.press('Enter');
@@ -377,7 +427,98 @@ test('My Profile onboarding: the inline search pins the picked account', async (
   expect(hashOf(page)).toBe('#/profile');
   // The title bar's search now lists it under My accounts (and, though remembered as a search, not again under Recent).
   await page.keyboard.press('Control+k');
-  await expect(suggestions(page).getByRole('group', { name: 'My accounts' }).getByRole('option')).toHaveAccessibleName(`${name}, PlayStation`);
+  await expect(suggestions(page).getByRole('group', { name: 'My accounts' }).getByRole('option')).toHaveAccessibleName(`${name} PlayStation`);
   await expect(suggestions(page).getByRole('group')).toHaveCount(1);
   expect(errors).toEqual([]);
+});
+
+/**
+ * axe-core's browser script, for the checks below: SIGHTLINE_AXE (a path to axe.min.js), else the axe-core package
+ * when it is installed. The app does not depend on it yet, so without either those checks are skipped, saying why
+ * (expectNamedFromContent still checks the options' names on every run).
+ */
+function axeScript(): string | null {
+  if (process.env.SIGHTLINE_AXE) return process.env.SIGHTLINE_AXE;
+  try {
+    return createRequire(import.meta.url).resolve('axe-core/axe.min.js');
+  } catch {
+    return null;
+  }
+}
+
+/** axe's violations (every rule it runs by default) on an open search list and its field, as "rule: targets". */
+async function axeViolations(page: Page, list: Locator, input: Locator): Promise<string[]> {
+  if (!(await page.evaluate(() => 'axe' in window))) await page.addScriptTag({ path: axeScript() ?? '' });
+  const include = [await list.elementHandle(), await input.elementHandle()];
+  return page.evaluate(async (nodes) => {
+    type Axe = { run(context: unknown): Promise<{ violations: { id: string; nodes: { target: string[] }[] }[] }> };
+    const { violations } = await (window as unknown as { axe: Axe }).axe.run({ include: nodes });
+    return violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+  }, include);
+}
+
+test.describe('axe', () => {
+  test.skip(axeScript() === null, 'axe-core is not installed: set SIGHTLINE_AXE to the path of its axe.min.js');
+  // axe goes in as an inline script, which the app's CSP (script-src 'self') would block.
+  test.use({ bypassCSP: true });
+
+  test('the open result lists, with an active option and an exact match, pass axe in dark, light and high-contrast themes', async ({ page, appUrl }) => {
+    test.slow();
+    const errors = await open(page, appUrl);
+    for (const theme of ['graphite', 'daylight', 'high-contrast', 'ember', 'desert-dune', 'winter-holiday']) {
+      // The stored theme applies on the next load.
+      await page.evaluate((id) => window.localStorage.setItem('sightline.settings', JSON.stringify({ theme: { activeThemeId: id } })), theme);
+      await page.goto(`${appUrl}/#/`);
+      await page.reload();
+      await page.waitForSelector('#root > *');
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+
+      // The title bar's list, with the first option active, then with an exact match first.
+      await page.keyboard.press('Control+k');
+      await page.keyboard.type('otter');
+      const list = await settledResults(page, 'PC');
+      await page.keyboard.press('ArrowDown');
+      await expect(list.getByRole('option').first()).toHaveAttribute('aria-selected', 'true');
+      expect(await axeViolations(page, list, field(page)), `${theme}, title bar`).toEqual([]);
+      const exact = playerName(await accessibleName(list.getByRole('option').first()));
+      await field(page).fill(exact);
+      await expect(list.getByRole('option').first()).toHaveAccessibleName(new RegExp(`^${escape(exact)} Exact match `), { timeout: 10_000 });
+      expect(await axeViolations(page, list, field(page)), `${theme}, exact match`).toEqual([]);
+      await page.keyboard.press('Escape');
+
+      // My Profile's onboarding search (nothing is pinned).
+      await page.goto(`${appUrl}/#/profile`);
+      const box = page.getByRole('combobox', { name: 'Find your account' });
+      await box.click();
+      await page.keyboard.type('otter');
+      const inline = await settledResults(page, 'PC');
+      await page.keyboard.press('ArrowDown');
+      await expect(inline.getByRole('option').first()).toHaveAttribute('aria-selected', 'true');
+      expect(await axeViolations(page, inline, box), `${theme}, onboarding`).toEqual([]);
+    }
+    expect(errors).toEqual([]);
+  });
+
+  test('the suggestions list (pinned, favourite, recent) passes axe', async ({ page, appUrl }) => {
+    const pinned = { player: { platform: LUHAL.platform, id: LUHAL.id, name: LUHAL.name, avatarUrl: null }, pinnedAt: '2026-11-01T10:00:00.000Z' };
+    await page.addInitScript((json) => {
+      if (!window.localStorage.getItem('sightline.settings')) window.localStorage.setItem('sightline.settings', json);
+    }, JSON.stringify({ accounts: { mock: { pinned: [pinned], active: { platform: LUHAL.platform, id: LUHAL.id } } } }));
+    const errors = await open(page, appUrl);
+    for (const [text, star] of [['quiet', false], ['otter', true]] as const) {
+      await page.keyboard.press('Control+k');
+      await page.keyboard.type(text);
+      const option = (await settledResults(page, 'PC')).getByRole('option').first();
+      const name = playerName(await accessibleName(option));
+      await option.click();
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(name, { timeout: 15_000 });
+      if (star) await page.getByRole('button', { name: `Add ${name} to favourites` }).click();
+    }
+    await page.keyboard.press('Control+k');
+    await expect(suggestions(page).getByRole('group')).toHaveCount(3);
+    await page.keyboard.press('ArrowUp');
+    await expect(suggestions(page).getByRole('group', { name: 'Recent' }).getByRole('option')).toHaveAttribute('aria-selected', 'true');
+    expect(await axeViolations(page, suggestions(page), field(page))).toEqual([]);
+    expect(errors).toEqual([]);
+  });
 });
